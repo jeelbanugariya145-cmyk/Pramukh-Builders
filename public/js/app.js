@@ -36,6 +36,7 @@ function pagesFor() {
   if (isCustomer()) return [{ id: 'myflat', icon: '🏠' }];
   if (isContractor()) {
     return [
+      { id: 'home', icon: '🏠' },
       { id: 'sitelist', icon: '🏗️' },
       can('complaints') && { id: 'complaints', icon: '📢' },
       seesDaily() && { id: 'daily', icon: '📋' },
@@ -44,6 +45,7 @@ function pagesFor() {
     ].filter(Boolean);
   }
   const pages = [
+    { id: 'home', icon: '🏠' },
     { id: 'dashboard', icon: '📊' },
     // Supervisors get only the flat change list, not the office flat pages
     (!onSite() || officeChanges()) && { id: 'flats', icon: '🏢', tabs: ['holders', Store.has('bookings') && 'bookings', isPartner() && 'units', isPartner() && 'projects'] },
@@ -173,6 +175,10 @@ function render() {
 
   const page = pages.find(p => p.id === state.page);
   const main = $('#main');
+  closeMenu();
+  document.body.classList.toggle('home-mode', page.id === 'home');
+  document.body.classList.toggle('single-page', pages.length < 2);
+  if (page.id === 'home') return renderHome(main);
   main.innerHTML = `<h1 class="page-title">${page.icon} ${t('nav_' + page.id)}</h1>`;
 
   if (page.id === 'myflat') return renderMyFlat(main);
@@ -439,6 +445,10 @@ function shareLogin(b) {
   window.open(`https://wa.me/${waNumber(b.phone)}?text=${encodeURIComponent(loginMessage(b, ''))}`, '_blank', 'noopener');
 }
 
+// ---------- Side menu (opens from the ☰ button) ----------
+function openMenu() { document.body.classList.add('menu-open'); }
+function closeMenu() { document.body.classList.remove('menu-open'); }
+
 // ---------- Language ----------
 function setLang(lang) {
   LANG = lang;
@@ -461,6 +471,10 @@ document.addEventListener('DOMContentLoaded', () => {
     state.tab[state.page] = b.dataset.tab;
     render();
   });
+  $('#menu-btn').addEventListener('click', openMenu);
+  $('#menu-backdrop').addEventListener('click', closeMenu);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
+  document.querySelectorAll('[data-home]').forEach(b => b.addEventListener('click', () => { state.page = 'home'; render(); window.scrollTo(0, 0); }));
   $('#lang-toggle').addEventListener('click', () => setLang(LANG === 'gu' ? 'en' : 'gu'));
   $('#logout').addEventListener('click', logoutNow);
   $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') e.target.close(); });

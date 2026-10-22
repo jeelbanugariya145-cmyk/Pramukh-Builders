@@ -358,6 +358,8 @@ const I18N = {
 
     demoNote: 'ડેમો: ડેટા ફક્ત આ બ્રાઉઝરમાં સેવ થાય છે. સમયાંતરે બેકઅપ લેતા રહો.',
 
+    nav_home: 'મુખ્ય પેજ',
+    menu: 'મેનુ',
     nav_dashboard: 'ડેશબોર્ડ',
     nav_projects: 'પ્રોજેક્ટ અને યુનિટ',
     nav_sales: 'બુકિંગ અને પેમેન્ટ',
@@ -876,6 +878,8 @@ const I18N = {
 
     demoNote: 'Demo: data is saved only in this browser. Take backups regularly.',
 
+    nav_home: 'Home',
+    menu: 'Menu',
     nav_dashboard: 'Dashboard',
     nav_projects: 'Projects & Units',
     nav_sales: 'Bookings & Payments',

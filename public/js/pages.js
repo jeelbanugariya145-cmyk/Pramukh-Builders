@@ -1,5 +1,20 @@
 // Pages: dashboard, flat chart, project info, settings, printed quotation
 
+// ---------- Home: the building photo, the name, and the menu button ----------
+function renderHome(main) {
+  main.innerHTML = `
+    <section class="home">
+      <img class="home-img" src="assets/banner.jpg" alt="Pramukh View">
+      <button class="home-menu" data-open-menu aria-label="${esc(t('menu'))}"><span class="home-menu-icon">☰</span><span>${t('menu')}</span></button>
+      <div class="home-text">
+        <div class="hero-tagline">${BRAND.taglineGu}</div>
+        <div class="home-title">Pramukh <span>VIEW</span></div>
+        <div class="hero-groups">${BRAND.groups}</div>
+      </div>
+    </section>`;
+  $('[data-open-menu]', main).addEventListener('click', openMenu);
+}
+
 // ---------- Dashboard ----------
 function heroBanner() {
   return `

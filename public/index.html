@@ -16,7 +16,13 @@
 <body>
   <div id="login" class="login" hidden></div>
   <div class="app">
-    <aside class="sidebar">
+    <header class="topbar">
+      <button id="menu-btn" class="menu-btn" aria-label="Menu">☰</button>
+      <img class="topbar-logo" src="assets/logo-pramukh-view.jpg" alt="Pramukh View" data-home>
+      <button class="btn btn-small" id="home-btn" data-home>🏠</button>
+    </header>
+    <div id="menu-backdrop" class="menu-backdrop"></div>
+    <aside class="sidebar" id="drawer">
       <div class="brand">
         <img class="brand-logo" src="assets/logo-pramukh-view.jpg" alt="Pramukh View">
         <button id="lang-toggle" class="btn btn-small lang-toggle"></button>
