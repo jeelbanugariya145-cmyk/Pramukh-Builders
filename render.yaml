@@ -1,21 +1,30 @@
 # One-step setup on Render (render.com → New → Blueprint → pick this repository).
-# The disk keeps the data and uploaded photos safe across restarts and updates.
+#
+# Free trial: a free web server plus a free Postgres database that keeps the data and photos.
+# The free server sleeps after 15 minutes without use (the next visit takes about a minute to wake),
+# and Render's free database expires after 30 days.
+# For real use, change both `plan:` values to paid plans (starter / basic-256mb).
 services:
   - type: web
     name: pramukh-view
     runtime: node
-    plan: starter
+    plan: free
     region: singapore
     branch: claude/chat-session-3iqxg7
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /api/status
     envVars:
-      - key: DATA_DIR
-        value: /var/data
       - key: NODE_VERSION
         value: "22"
-    disk:
-      name: pramukh-data
-      mountPath: /var/data
-      sizeGB: 2
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pramukh-db
+          property: connectionString
+
+databases:
+  - name: pramukh-db
+    plan: free
+    region: singapore
+    databaseName: pramukh
+    user: pramukh

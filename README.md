@@ -53,10 +53,14 @@ Key ન હોય તો પણ સોફ્ટવેર ચાલે છે. �
 
 ### Render પર ઓનલાઇન મૂકવું (ફોનથી પણ થાય)
 
-1. [render.com](https://render.com) પર GitHub થી સાઇન ઇન કરો અને પેમેન્ટ કાર્ડ ઉમેરો (Starter પ્લાન + ડિસ્ક, આશરે $8–9 મહિને).
-2. **New → Blueprint** → આ repository પસંદ કરો → **Apply**. `render.yaml` પ્રમાણે સર્વર અને કાયમી ડિસ્ક આપોઆપ બને છે.
+**ફ્રી ટ્રાયલ** (પેમેન્ટ વગર): `render.yaml` ફ્રી સર્વર અને ફ્રી Postgres ડેટાબેઝ બનાવે છે. ડેટા અને ફોટા ડેટાબેઝમાં સચવાય છે.
+
+1. [render.com](https://render.com) પર GitHub થી સાઇન ઇન કરો.
+2. **New → Blueprint** → આ repository પસંદ કરો → **Apply**.
 3. 5–10 મિનિટમાં `https://pramukh-view-….onrender.com` લિંક મળશે. તે ખોલીને ભાગીદારનું એકાઉન્ટ બનાવો.
-4. પોતાનું ડોમેન જોઈતું હોય તો Render માં **Settings → Custom Domains** માં ઉમેરો.
+
+ફ્રી પ્લાનની મર્યાદા: 15 મિનિટ કોઈ ન વાપરે તો સર્વર સૂઈ જાય (પછી પહેલી વાર ખૂલતાં ~1 મિનિટ લાગે), અને ફ્રી ડેટાબેઝ **30 દિવસ** પછી બંધ થાય.
+કાયમી ઉપયોગ માટે Render માં સર્વરને **Starter** અને ડેટાબેઝને **Basic** પ્લાન પર ફેરવો (આશરે $14 મહિને). ડેટા એ જ રહે છે.
 
 ### બીજે કોઈ પણ સર્વર પર
 
@@ -64,7 +68,7 @@ Key ન હોય તો પણ સોફ્ટવેર ચાલે છે. �
 કોઈ પણ Node.js સર્વર (VPS, Render, Railway વગેરે) ચાલે:
 
 - `npm install` પછી `npm start` ચલાવો. પોર્ટ `PORT` થી બદલી શકાય.
-- બધો ડેટા અને અપલોડ થયેલા ફોટા `data/` ફોલ્ડરમાં રહે છે (અથવા `DATA_DIR`). આ ફોલ્ડર **કાયમી ડિસ્ક** પર હોવું જોઈએ, અને તેનો નિયમિત બેકઅપ લેવો.
+- `DATABASE_URL` આપો તો ડેટા અને ફોટા Postgres માં રહે છે. ન આપો તો `data/` ફોલ્ડરમાં (અથવા `DATA_DIR`). આ ફોલ્ડર **કાયમી ડિસ્ક** પર હોવું જોઈએ, અને તેનો નિયમિત બેકઅપ લેવો.
 - વેબસાઇટ **HTTPS** પર ચલાવો (ડોમેન સાથે), જેથી PIN સુરક્ષિત રીતે જાય.
 
 ---
@@ -80,7 +84,7 @@ contractors and flat owners each log in with mobile number + PIN and see only wh
 - Material bills are switched off by default (`MATERIALS=on` enables them).
 - **Daily visitors**, labour and attendance, flat chart, quotations, project info from the brochure.
 
-Run: `npm install && npm start` (Node 20+). Deploy on Render with the included `render.yaml` blueprint (web service + persistent disk at `/var/data`). Set `ANTHROPIC_API_KEY` to enable bill/statement reading. Data lives in `data/` (`DATA_DIR`).
+Run: `npm install && npm start` (Node 20+). Storage: Postgres when `DATABASE_URL` is set (data as one JSONB document, uploads as BYTEA), otherwise a JSON file and uploads folder under `DATA_DIR`. Deploy on Render with the included `render.yaml` blueprint (free web service + free Postgres for trials). Set `ANTHROPIC_API_KEY` to enable bill/statement reading. Data lives in `data/` (`DATA_DIR`).
 
 ### Code layout
 
@@ -88,5 +92,5 @@ Run: `npm install && npm start` (Node 20+). Deploy on Render with the included `
 - `server/auth.js` – mobile + PIN login (scrypt hashes), sessions, lockout after 5 wrong PINs
 - `server/rules.js` – what each role may read and write (enforced on the server)
 - `server/ai.js` – bill and bank statement reading with the Anthropic SDK
-- `server/db.js` – JSON file storage; `server/demo.js` – Pramukh View flats and demo data
+- `server/db.js` – storage (Postgres or JSON file + uploads folder); `server/demo.js` – Pramukh View flats and demo data
 - `public/` – the web app (`js/app.js` core, `pages.js`, `changes.js`, `materials.js`, `entities.js`, `i18n.js`, `brand.js`)

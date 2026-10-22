@@ -1,6 +1,5 @@
 // Reads material bills and bank statements with Claude.
 // Needs ANTHROPIC_API_KEY on the server; without it the app still works with manual entry.
-import fs from 'node:fs';
 import Anthropic from '@anthropic-ai/sdk';
 
 const MODEL = 'claude-opus-5-5';
@@ -61,22 +60,22 @@ const STATEMENT_SCHEMA = {
   additionalProperties: false
 };
 
-function fileBlock(file, filePath) {
-  const data = fs.readFileSync(filePath).toString('base64');
+function fileBlock(file, bytes) {
+  const data = Buffer.from(bytes).toString('base64');
   if (file.mime === 'application/pdf') {
     return { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data } };
   }
   return { type: 'image', source: { type: 'base64', media_type: file.mime, data } };
 }
 
-async function extract(file, filePath, schema, instruction) {
+async function extract(file, bytes, schema, instruction) {
   const stream = getClient().beta.messages.stream({
     model: MODEL,
     max_tokens: 64000,
     betas: ['server-side-fallback-2026-07-01'],
     fallbacks: 'default',
     output_config: { effort: 'medium', format: { type: 'json_schema', schema } },
-    messages: [{ role: 'user', content: [fileBlock(file, filePath), { type: 'text', text: instruction }] }]
+    messages: [{ role: 'user', content: [fileBlock(file, bytes), { type: 'text', text: instruction }] }]
   });
   const message = await stream.finalMessage();
   if (message.stop_reason === 'refusal') throw new Error('refused');
@@ -85,8 +84,8 @@ async function extract(file, filePath, schema, instruction) {
   return JSON.parse(text);
 }
 
-export function readBill(file, filePath) {
-  return extract(file, filePath, BILL_SCHEMA,
+export function readBill(file, bytes) {
+  return extract(file, bytes, BILL_SCHEMA,
     'This is a photo or scan of a construction material purchase bill (invoice) from an Indian supplier. ' +
     'It may be in Gujarati, Hindi or English, printed or handwritten. Read it and fill every field. ' +
     'Write the supplier name and item names in the language printed on the bill. ' +
@@ -94,8 +93,8 @@ export function readBill(file, filePath) {
     'If a value is not on the bill, use an empty string or 0. Set readable to false only if this is not a bill or cannot be read.');
 }
 
-export function readStatement(file, filePath) {
-  return extract(file, filePath, STATEMENT_SCHEMA,
+export function readStatement(file, bytes) {
+  return extract(file, bytes, STATEMENT_SCHEMA,
     'This is an Indian bank account statement. List every transaction row in order. ' +
     'Use debit for withdrawals / payments out and credit for deposits. ' +
     'Give plain numbers without commas. Skip opening/closing balance lines and page headers.');

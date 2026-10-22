@@ -3,7 +3,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-import { db, save, newId, find, replaceAll, UPLOAD_DIR, COLLECTIONS } from './db.js';
+import { db, save, flush, newId, find, replaceAll, writeFile, readFile, storageMode, FILE_TYPES, COLLECTIONS } from './db.js';
 import { login, logout, currentUser, parseCookies, hashPin, validPin, normMobile } from './auth.js';
 import { PERMS, MATERIALS, FIELDS, REFS, can, canWrite, readableData, canReadFile, customerBookings } from './rules.js';
 import { aiEnabled, readBill, readStatement, aiErrorCode } from './ai.js';
@@ -13,10 +13,6 @@ const PORT = Number(process.env.PORT) || 3000;
 const PUBLIC_DIR = path.resolve('public');
 const MAX_BODY = 25 * 1024 * 1024;
 const MAX_FILE = 15 * 1024 * 1024;
-const FILE_TYPES = {
-  'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif',
-  'application/pdf': '.pdf', 'text/csv': '.csv', 'text/plain': '.txt'
-};
 const STATIC_TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json', '.webmanifest': 'application/manifest+json'
@@ -103,19 +99,17 @@ const publicRecord = (coll, r) => {
   return r;
 };
 
-function saveUpload(user, body) {
+async function saveUpload(user, body) {
   const m = /^data:([\w/+.-]+);base64,(.*)$/s.exec(body.dataUrl || '');
   if (!m || !FILE_TYPES[m[1]]) fail(400, 'bad_file');
   const buf = Buffer.from(m[2], 'base64');
   if (buf.length > MAX_FILE) fail(413, 'too_large');
-  const id = newId();
-  fs.writeFileSync(path.join(UPLOAD_DIR, id + FILE_TYPES[m[1]]), buf);
-  const file = { id, name: String(body.name || 'file').slice(0, 200), mime: m[1], size: buf.length, by: user.id, at: new Date().toISOString() };
+  const file = { id: newId(), name: String(body.name || 'file').slice(0, 200), mime: m[1], size: buf.length, by: user.id, at: new Date().toISOString() };
+  await writeFile(file, buf);
   db.files.push(file);
   save();
   return file;
 }
-const filePath = f => path.join(UPLOAD_DIR, f.id + FILE_TYPES[f.mime]);
 
 // ---------- API ----------
 async function api(req, res, url) {
@@ -312,19 +306,20 @@ async function api(req, res, url) {
   // ---------- Files ----------
   if (route === 'POST /upload') {
     const body = await readBody(req);
-    return send(res, 200, saveUpload(user, body));
+    return send(res, 200, await saveUpload(user, body));
   }
 
   if (method === 'GET' && parts[0] === 'files' && parts[1]) {
     const f = db.files.find(x => x.id === parts[1]);
-    if (!f || !canReadFile(user, f.id) || !fs.existsSync(filePath(f))) fail(404, 'not_found');
+    const bytes = f && canReadFile(user, f.id) ? await readFile(f) : null;
+    if (!bytes) fail(404, 'not_found');
     res.writeHead(200, {
       'Content-Type': f.mime,
       'Content-Disposition': `inline; filename="${encodeURIComponent(f.name)}"`,
       'Cache-Control': 'private, max-age=86400',
       'X-Content-Type-Options': 'nosniff'
     });
-    return fs.createReadStream(filePath(f)).pipe(res);
+    return res.end(bytes);
   }
 
   // ---------- Reading bills and statements with AI ----------
@@ -335,7 +330,7 @@ async function api(req, res, url) {
     const f = db.files.find(x => x.id === body.fileId && x.by === user.id);
     if (!f || !/^image\/|application\/pdf/.test(f.mime)) fail(400, 'bad_file');
     try {
-      const result = route === 'POST /ai/bill' ? await readBill(f, filePath(f)) : await readStatement(f, filePath(f));
+      const result = route === 'POST /ai/bill' ? await readBill(f, await readFile(f)) : await readStatement(f, await readFile(f));
       return send(res, 200, result);
     } catch (err) {
       console.error('AI error:', err.message);
@@ -402,5 +397,12 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`Pramukh View is running: http://localhost:${PORT}`);
+  console.log(`Data is kept in: ${storageMode() === 'postgres' ? 'Postgres database' : 'files on disk'}`);
   console.log(aiEnabled() ? 'Bill reading (AI): on' : 'Bill reading (AI): off - set ANTHROPIC_API_KEY to turn it on');
+});
+
+// Finish any pending database write before the host stops the server
+process.on('SIGTERM', async () => {
+  await flush();
+  process.exit(0);
 });
