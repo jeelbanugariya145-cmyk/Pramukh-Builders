@@ -1,0 +1,21 @@
+# One-step setup on Render (render.com → New → Blueprint → pick this repository).
+# The disk keeps the data and uploaded photos safe across restarts and updates.
+services:
+  - type: web
+    name: pramukh-view
+    runtime: node
+    plan: starter
+    region: singapore
+    branch: claude/chat-session-3iqxg7
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/status
+    envVars:
+      - key: DATA_DIR
+        value: /var/data
+      - key: NODE_VERSION
+        value: "22"
+    disk:
+      name: pramukh-data
+      mountPath: /var/data
+      sizeGB: 2

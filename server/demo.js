@@ -126,6 +126,18 @@ export function loadDemo() {
     status, followUp: follow ? daysAgo(-follow) : '', notes: ''
   }));
 
+  const report = (ago, workDone, workers, plan) => ({
+    id: `${daysAgo(ago)}_demo`, date: daysAgo(ago), userId: 'demo', userName: 'ડેમો સુપરવાઇઝર',
+    workDone, workers, photos: [], updatedAt: daysAgo(ago) + 'T18:00:00.000Z',
+    plan: plan.map(([text, status], i) => ({ id: `d${ago}-${i}`, text, status, checkedOn: status ? daysAgo(ago - 1) : '' }))
+  });
+  d.dailyReports = [
+    report(2, 'વિંગ A 8મા માળનો સ્લેબ ભર્યો. વિંગ B 3જા માળે બ્લોક કામ.', 34,
+      [['વિંગ A 9મા માળનું શટરિંગ', 'done'], ['વિંગ B 3જા માળે પ્લાસ્ટર', 'notdone']]),
+    report(1, 'વિંગ A 9મા માળનું શટરિંગ પૂરું. વિંગ B માં લિફ્ટ ખાડાનું કામ.', 32,
+      [['વિંગ A 9મા માળનું સ્ટીલ બાંધવું', ''], ['વિંગ B 3જા માળે પ્લાસ્ટર', ''], ['સાઇટ સફાઈ', '']])
+  ];
+
   d.files = [];
   replaceAll(d);
 }

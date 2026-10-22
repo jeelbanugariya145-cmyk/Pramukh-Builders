@@ -8,15 +8,18 @@
 | લોગિન | શું જોઈ / કરી શકે |
 |---|---|
 | **ભાગીદાર** | બધું. સ્ટાફ, કોન્ટ્રાક્ટરના લોગિન બનાવવા, બેકઅપ |
-| **સ્ટાફ** | ભાગીદાર જે ટિક કરે તે જ: ફ્લેટ માલિકો · પ્લાન મંજૂરી (સિવિલ) · મટીરીયલ બિલ / ખર્ચ · મજૂર · દૈનિક મુલાકાતીઓ |
-| **કોન્ટ્રાક્ટર** | ફક્ત **મંજૂર થયેલા પ્લાન ફેરફાર** અને ફ્લેટ ચાર્ટ (ગ્રાહકનું નામ કે નંબર નહીં) |
+| **સ્ટાફ / સુપરવાઇઝર** | ભાગીદાર જે ટિક કરે તે જ: દૈનિક રિપોર્ટ લખવો · બધાના દૈનિક રિપોર્ટ જોવા · ફ્લેટ માલિકો · પ્લાન મંજૂરી (સિવિલ) · મજૂર · દૈનિક મુલાકાતીઓ |
+| **કોન્ટ્રાક્ટર** | **મંજૂર થયેલા પ્લાન ફેરફાર** અને ફ્લેટ ચાર્ટ (ગ્રાહકનું નામ કે નંબર નહીં). ભાગીદાર ટિક કરે તો દૈનિક રિપોર્ટ અને મજૂર પણ |
 | **ફ્લેટ માલિક** | ફક્ત **પોતાનો ફ્લેટ**: વિગત, પ્લાન, ફેરફારની વિનંતી અને તેનો જવાબ. બીજા કોઈ ફ્લેટ કે ગ્રાહકની માહિતી નહીં |
 
 ## મુખ્ય ભાગ
 
+- **📋 દૈનિક કામ:** સુપરવાઇઝર રોજ "આજે શું કામ થયું" લખે, સાઇટના ફોટા મૂકે અને "આવતીકાલે શું કામ થશે" લખે.
+  બીજા દિવસે એ લિસ્ટ **ચેકલિસ્ટ** બનીને આવે: દરેક કામ ✓ થયું / ✕ નથી થયું. બાકી રહેલું કામ એક ટચમાં ફરી આવતીકાલમાં ઉમેરાય.
+  ભાગીદારો "બધાના રિપોર્ટ" માં દરેક સુપરવાઇઝરનું કામ, ફોટા અને ચેકલિસ્ટ જુએ.
 - **📐 પ્લાન ફેરફાર:** ફ્લેટ માલિક પોતાના લોગિનમાંથી ફેરફાર દોરેલા પ્લાનનો ફોટો મોકલે → સિવિલ વિભાગ મંજૂર / નામંજૂર કરે (કારણ સાથે, જરૂર હોય તો ફાઇનલ પ્લાન મૂકે) → મંજૂર થયેલું કોન્ટ્રાક્ટરને દેખાય → કામ પૂરું થાય એટલે કોન્ટ્રાક્ટર "કામ પૂરું થયું" દબાવે.
   ફ્લેટ ચાર્ટ અને ફ્લેટ લિસ્ટમાં જે ફ્લેટમાં ફેરફાર મંજૂર થયો હોય તે **જાંબલી** કલરમાં દેખાય છે.
-- **🧱 મટીરીયલ બિલ:** બિલનો ફોટો પાડો → સોફ્ટવેર સપ્લાયર, તારીખ, માલ અને રકમ જાતે વાંચે (Claude AI) → ચેક કરીને સેવ કરો.
+- **🧱 મટીરીયલ બિલ** (અત્યારે બંધ છે; સર્વર પર `MATERIALS=on` કરવાથી ચાલુ થાય): બિલનો ફોટો પાડો → સોફ્ટવેર સપ્લાયર, તારીખ, માલ અને રકમ જાતે વાંચે (Claude AI) → ચેક કરીને સેવ કરો.
   **મહિનાનો હિસાબ:** કયા સપ્લાયરનું કેટલું બિલ, કેટલું ચૂકવાયું, કેટલું બાકી. પેમેન્ટ થાય એટલે ☑ ટિક કરો.
   **બેંક સ્ટેટમેન્ટ:** CSV (કે PDF) અપલોડ કરો, સોફ્ટવેર બેંકમાંથી ગયેલી રકમને બાકી બિલ સાથે મેળવીને બતાવે કયા ચૂકવાઈ ગયા.
 - **🚶 દૈનિક મુલાકાતીઓ:** સાઇટ / ઓફિસ પર આવતા લોકોની એન્ટ્રી, ફોલો-અપ તારીખ. ફક્ત જેને પરવાનગી હોય તેને જ દેખાય.
@@ -48,7 +51,14 @@ ANTHROPIC_API_KEY=sk-ant-... npm start
 Key ન હોય તો પણ સોફ્ટવેર ચાલે છે. ફક્ત બિલની વિગત જાતે નાખવી પડશે (ફોટો સાથે રહેશે).
 દરેક બિલ વાંચવાનો થોડો ખર્ચ Anthropic ના બિલમાં આવે છે.
 
-### બધા પોતાના મોબાઇલથી વાપરી શકે તે માટે (ઓનલાઇન)
+### Render પર ઓનલાઇન મૂકવું (ફોનથી પણ થાય)
+
+1. [render.com](https://render.com) પર GitHub થી સાઇન ઇન કરો અને પેમેન્ટ કાર્ડ ઉમેરો (Starter પ્લાન + ડિસ્ક, આશરે $8–9 મહિને).
+2. **New → Blueprint** → આ repository પસંદ કરો → **Apply**. `render.yaml` પ્રમાણે સર્વર અને કાયમી ડિસ્ક આપોઆપ બને છે.
+3. 5–10 મિનિટમાં `https://pramukh-view-….onrender.com` લિંક મળશે. તે ખોલીને ભાગીદારનું એકાઉન્ટ બનાવો.
+4. પોતાનું ડોમેન જોઈતું હોય તો Render માં **Settings → Custom Domains** માં ઉમેરો.
+
+### બીજે કોઈ પણ સર્વર પર
 
 ફ્લેટ માલિકો અને કોન્ટ્રાક્ટર પોતાના ફોનથી લોગિન કરે તે માટે આ સોફ્ટવેર ઇન્ટરનેટ પરના સર્વર પર ચાલવું જોઈએ.
 કોઈ પણ Node.js સર્વર (VPS, Render, Railway વગેરે) ચાલે:
@@ -61,14 +71,16 @@ Key ન હોય તો પણ સોફ્ટવેર ચાલે છે. �
 
 ## English
 
-Role-based web app for Pramukh View (Pramukh Builders & Shreeji Builders): partners, staff with ticked permissions,
+Role-based web app for Pramukh View (Pramukh Builders & Shreeji Builders): partners, staff and supervisors with ticked permissions,
 contractors and flat owners each log in with mobile number + PIN and see only what their role allows.
 
 - **Plan changes:** owner uploads a marked-up plan → civil approver approves/rejects (optional final drawing) → contractor sees approved changes and marks them done. Flats with approved changes are highlighted in the chart and list.
 - **Material bills:** photo → Claude (`claude-opus-5-5`, structured output) extracts supplier, bill no., date, items, GST and total for review; monthly per-supplier totals with paid ticks; bank statement CSV/PDF matched to pending bills by amount and supplier name.
+- **Daily site reports:** supervisors log work done, photos and tomorrow's plan; the next day the plan becomes a done / not-done checklist. Partners see every supervisor's report per day.
+- Material bills are switched off by default (`MATERIALS=on` enables them).
 - **Daily visitors**, labour and attendance, flat chart, quotations, project info from the brochure.
 
-Run: `npm install && npm start` (Node 20+). Set `ANTHROPIC_API_KEY` to enable bill/statement reading. Data lives in `data/` (`DATA_DIR`).
+Run: `npm install && npm start` (Node 20+). Deploy on Render with the included `render.yaml` blueprint (web service + persistent disk at `/var/data`). Set `ANTHROPIC_API_KEY` to enable bill/statement reading. Data lives in `data/` (`DATA_DIR`).
 
 ### Code layout
 

@@ -16,7 +16,12 @@ function prefSet(key, value) {
 const isPartner = () => Store.me && Store.me.role === 'partner';
 const isContractor = () => Store.me && Store.me.role === 'contractor';
 const isCustomer = () => Store.me && Store.me.role === 'customer';
-const can = perm => isPartner() || (Store.me && Store.me.role === 'staff' && Store.me.perms.includes(perm));
+function can(perm) {
+  if (perm === 'materials' && !Store.materials) return false;
+  if (isContractor() && (perm === 'flats' || perm === 'approvals')) return false;
+  return isPartner() || (Store.me && ['staff', 'contractor'].includes(Store.me.role) && Store.me.perms.includes(perm));
+}
+const seesDaily = () => can('daily') || can('dailyView');
 
 // Menu pages and the tabs inside them, filtered by what this person may use
 function pagesFor() {
@@ -24,13 +29,16 @@ function pagesFor() {
   if (isContractor()) {
     return [
       { id: 'changes', icon: '📐' },
+      seesDaily() && { id: 'daily', icon: '📋' },
       { id: 'flats', icon: '🏢', tabs: ['chart'] },
+      can('labour') && { id: 'labour', icon: '👷', tabs: ['workers', 'attendance', 'labourPayments'] },
       { id: 'info', icon: '🏙️' },
       { id: 'settings', icon: '⚙️' }
-    ];
+    ].filter(Boolean);
   }
   const pages = [
     { id: 'dashboard', icon: '📊' },
+    seesDaily() && { id: 'daily', icon: '📋' },
     { id: 'info', icon: '🏙️' },
     { id: 'flats', icon: '🏢', tabs: ['chart', 'units', isPartner() && 'projects', Store.has('bookings') && 'bookings'] },
     (can('approvals') || can('flats')) && { id: 'changes', icon: '📐' },
@@ -73,6 +81,7 @@ async function boot() {
     return renderLogin({ offline: true });
   }
   Store.ai = status.ai;
+  Store.materials = status.materials;
   if (status.needsSetup) return renderLogin({ setup: true });
   if (!status.user) return renderLogin({});
   Store.me = status.user;
@@ -160,6 +169,7 @@ function render() {
   if (page.id === 'dashboard') return renderDashboard(main);
   if (page.id === 'info') return renderInfo(main);
   if (page.id === 'changes') return renderChanges(main);
+  if (page.id === 'daily') return renderDaily(main);
   if (page.id === 'settings') return renderSettings(main);
 
   const tab = page.tabs.includes(state.tab[page.id]) ? state.tab[page.id] : page.tabs[0];

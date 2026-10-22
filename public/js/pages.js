@@ -45,6 +45,7 @@ function renderDashboard(main) {
   const followUps = Store.list('visitors').filter(v => v.followUp && v.followUp <= today() && !['booked', 'notInterested'].includes(v.status));
 
   const cards = [
+    seesDaily() && stat('d_todayReports', Store.list('dailyReports').filter(r => r.date === today()).length, '', 'daily'),
     stat('d_units', `${s.booked} / ${s.units}`, '', 'flats:chart'),
     Store.has('changeRequests') && stat('d_pendingChanges', pendingChanges, pendingChanges ? 'warn' : '', 'changes'),
     can('visitors') && stat('d_todayVisitors', todayVisitors, '', 'visitors:visitors'),

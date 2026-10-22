@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { db, save, newId, find, replaceAll, UPLOAD_DIR, COLLECTIONS } from './db.js';
 import { login, logout, currentUser, parseCookies, hashPin, validPin, normMobile } from './auth.js';
-import { PERMS, FIELDS, REFS, can, canWrite, readableData, canReadFile, customerBookings } from './rules.js';
+import { PERMS, MATERIALS, FIELDS, REFS, can, canWrite, readableData, canReadFile, customerBookings } from './rules.js';
 import { aiEnabled, readBill, readStatement, aiErrorCode } from './ai.js';
 import { setupPramukhView, loadDemo } from './demo.js';
 
@@ -26,6 +26,9 @@ class HttpError extends Error {
   constructor(status, code) { super(code); this.status = status; }
 }
 const fail = (status, code) => { throw new HttpError(status, code); };
+
+// Today's date at the site (India), as YYYY-MM-DD
+const localToday = () => new Date().toLocaleDateString('en-CA', { timeZone: process.env.SITE_TZ || 'Asia/Kolkata' });
 
 function send(res, status, body, headers = {}) {
   const json = typeof body !== 'string';
@@ -123,7 +126,7 @@ async function api(req, res, url) {
   const route = `${method} /${parts.join('/')}`;
 
   if (route === 'GET /status') {
-    return send(res, 200, { needsSetup: db.users.length === 0, user, ai: aiEnabled() });
+    return send(res, 200, { needsSetup: db.users.length === 0, user, ai: aiEnabled(), materials: MATERIALS });
   }
 
   if (route === 'POST /setup') {
@@ -219,6 +222,43 @@ async function api(req, res, url) {
     return send(res, 200, { bills: updated });
   }
 
+  // ---------- Daily site reports (one per supervisor per day) ----------
+  if (route === 'POST /daily/save') {
+    if (!can(user, 'daily')) fail(403, 'forbidden');
+    const body = await readBody(req);
+    const date = String(body.date || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > localToday()) fail(400, 'bad_date');
+    const id = `${date}_${user.id}`;
+    const old = find('dailyReports', id);
+    const photos = (body.photos || []).filter(fid => db.files.some(f => f.id === fid && (f.by === user.id || (old && (old.photos || []).includes(fid)))));
+    const plan = (body.plan || []).slice(0, 100).map(p => ({
+      id: String(p.id || newId()).slice(0, 40), text: String(p.text || '').slice(0, 500),
+      status: ['done', 'notdone'].includes(p.status) ? p.status : '', checkedOn: String(p.checkedOn || '').slice(0, 10)
+    })).filter(p => p.text.trim());
+    const rec = {
+      id, date, userId: user.id, userName: user.name,
+      workDone: String(body.workDone || '').slice(0, 5000),
+      workers: body.workers === '' || body.workers == null ? '' : Number(body.workers) || 0,
+      photos, plan, updatedAt: new Date().toISOString()
+    };
+    if (old) Object.assign(old, rec); else db.dailyReports.push(rec);
+    save();
+    return send(res, 200, old || rec);
+  }
+
+  if (route === 'POST /daily/check') {
+    const body = await readBody(req);
+    const rep = find('dailyReports', String(body.reportId || ''));
+    if (!rep) fail(404, 'not_found');
+    if (!(user.role === 'partner' || (can(user, 'daily') && rep.userId === user.id))) fail(403, 'forbidden');
+    const item = rep.plan.find(p => p.id === body.itemId);
+    if (!item) fail(404, 'not_found');
+    item.status = ['done', 'notdone'].includes(body.status) ? body.status : '';
+    item.checkedOn = item.status ? localToday() : '';
+    save();
+    return send(res, 200, rep);
+  }
+
   // ---------- Plan change requests ----------
   if (route === 'POST /changes') {
     const body = await readBody(req);
@@ -231,7 +271,7 @@ async function api(req, res, url) {
     const rec = {
       id: newId(), bookingId: booking.id, unitId: booking.unitId, customerName: booking.customerName, phone: booking.phone,
       description: String(body.description || '').slice(0, 3000), files, finalFiles: [],
-      status: 'pending', remark: '', createdAt: new Date().toISOString().slice(0, 10), reviewedAt: '', reviewedBy: '', doneAt: ''
+      status: 'pending', remark: '', createdAt: localToday(), reviewedAt: '', reviewedBy: '', doneAt: ''
     };
     db.changeRequests.push(rec);
     save();
@@ -248,14 +288,14 @@ async function api(req, res, url) {
       rec.status = body.status;
       rec.remark = String(body.remark || '').slice(0, 2000);
       rec.finalFiles = (body.finalFiles || []).filter(id => db.files.some(f => f.id === id));
-      rec.reviewedAt = body.status === 'pending' ? '' : new Date().toISOString().slice(0, 10);
+      rec.reviewedAt = body.status === 'pending' ? '' : localToday();
       rec.reviewedBy = body.status === 'pending' ? '' : user.name;
       rec.doneAt = '';
     } else if (parts[2] === 'done') {
       if (!(user.role === 'contractor' || can(user, 'approvals'))) fail(403, 'forbidden');
       if (!['approved', 'done'].includes(rec.status)) fail(400, 'bad_status');
       rec.status = body.done === false ? 'approved' : 'done';
-      rec.doneAt = rec.status === 'done' ? new Date().toISOString().slice(0, 10) : '';
+      rec.doneAt = rec.status === 'done' ? localToday() : '';
     } else fail(404, 'not_found');
     save();
     const out = user.role === 'contractor' ? (({ customerName, phone, ...c }) => c)(rec) : rec;
@@ -308,7 +348,7 @@ async function api(req, res, url) {
     if (user.role !== 'partner') fail(403, 'forbidden');
     if (route === 'GET /admin/backup') {
       const { sessions, ...data } = db;
-      return send(res, 200, data, { 'Content-Disposition': `attachment; filename="pramukh-view-backup-${new Date().toISOString().slice(0, 10)}.json"` });
+      return send(res, 200, data, { 'Content-Disposition': `attachment; filename="pramukh-view-backup-${localToday()}.json"` });
     }
     if (route === 'POST /admin/restore') {
       const body = await readBody(req);

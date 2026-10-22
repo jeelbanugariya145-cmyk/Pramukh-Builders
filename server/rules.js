@@ -2,11 +2,19 @@
 import { db } from './db.js';
 import { normMobile } from './auth.js';
 
-// Staff permissions a partner can tick for each staff member
-export const PERMS = ['flats', 'approvals', 'materials', 'labour', 'visitors'];
+// The material bills section is switched off unless MATERIALS=on is set on the server
+export const MATERIALS = process.env.MATERIALS === 'on';
+
+// What a partner can tick for each staff member, supervisor or contractor
+export const PERMS = ['flats', 'approvals', 'daily', 'dailyView', 'labour', 'visitors', 'materials'];
 
 const isPartner = u => u.role === 'partner';
-export const can = (u, perm) => isPartner(u) || (u.role === 'staff' && u.perms.includes(perm));
+export function can(u, perm) {
+  if (perm === 'materials' && !MATERIALS) return false;
+  // Contractors never handle flat owners or approve plan changes
+  if (u.role === 'contractor' && (perm === 'flats' || perm === 'approvals')) return false;
+  return isPartner(u) || (['staff', 'contractor'].includes(u.role) && u.perms.includes(perm));
+}
 
 // Fields a client may set on each collection (anything else is ignored)
 export const FIELDS = {
@@ -79,11 +87,11 @@ export function readableData(u) {
     out.changeRequests = db.changeRequests
       .filter(c => c.status === 'approved' || c.status === 'done')
       .map(({ customerName, phone, ...c }) => c);
-    return out;
+  } else if (can(u, 'flats') || can(u, 'approvals')) {
+    out.bookings = db.bookings.map(publicBooking);
+    out.changeRequests = db.changeRequests;
   }
-
-  if (can(u, 'flats') || can(u, 'approvals')) out.bookings = db.bookings.map(publicBooking);
-  if (can(u, 'flats') || can(u, 'approvals')) out.changeRequests = db.changeRequests;
+  if (can(u, 'daily') || can(u, 'dailyView')) out.dailyReports = db.dailyReports;
   if (can(u, 'materials')) { out.bills = db.bills; out.expenses = db.expenses; }
   if (can(u, 'labour')) { out.workers = db.workers; out.attendance = db.attendance; out.labourPayments = db.labourPayments; }
   if (can(u, 'visitors')) out.visitors = db.visitors;
@@ -100,5 +108,6 @@ export function canReadFile(u, fileId) {
   const inChanges = (data.changeRequests || []).some(c =>
     (c.files || []).includes(fileId) || (c.finalFiles || []).includes(fileId));
   const inBills = (data.bills || []).some(b => b.photo === fileId);
-  return inChanges || inBills;
+  const inReports = (data.dailyReports || []).some(r => (r.photos || []).includes(fileId));
+  return inChanges || inBills || inReports;
 }

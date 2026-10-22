@@ -216,7 +216,13 @@ const ENTITIES = {
       { name: 'name', label: 'name', required: true },
       { name: 'mobile', label: 'loginMobile', type: 'tel', required: true },
       { name: 'role', label: 'role', type: 'select', options: opts('role_', ['partner', 'staff', 'contractor']), default: 'staff', required: true },
-      { name: 'perms', label: 'permissions', type: 'checks', options: opts('perm_', ['flats', 'approvals', 'materials', 'labour', 'visitors']), showIf: v => v.role === 'staff' },
+      {
+        name: 'perms', label: 'permissions', type: 'checks', help: 'permsHelp',
+        // Contractors cannot handle flat owners or approve plan changes
+        options: () => ['daily', 'dailyView', 'flats', 'approvals', 'labour', 'visitors', Store.materials && 'materials']
+          .filter(Boolean).map(k => ({ value: k, label: t('perm_' + k) })),
+        showIf: v => v.role === 'staff' || v.role === 'contractor'
+      },
       { name: 'pin', label: 'loginPin', type: 'pin', help: 'pinHelpUser', requiredOnCreate: true },
       { name: 'active', label: 'active', type: 'select', options: () => [{ value: 'yes', label: t('yes') }, { value: 'no', label: t('no') }], default: 'yes' }
     ],
@@ -224,7 +230,8 @@ const ENTITIES = {
       { label: 'name', value: r => `<strong>${esc(r.name)}</strong>` },
       { label: 'loginMobile', value: r => esc(r.mobile) },
       { label: 'role', value: r => badge('role-' + r.role, t('role_' + r.role)) },
-      { label: 'permissions', value: r => r.role === 'partner' ? t('perm_all') : r.role === 'staff' ? (r.perms || []).map(p => t('perm_' + p)).join(', ') : '' },
+      { label: 'permissions', value: r => r.role === 'partner' ? t('perm_all')
+        : [r.role === 'contractor' && t('perm_approvedChanges'), ...(r.perms || []).filter(p => !(r.role === 'contractor' && (p === 'flats' || p === 'approvals'))).map(p => t('perm_' + p))].filter(Boolean).join(', ') },
       { label: 'active', value: r => r.active === 'no' ? badge('sold', t('no')) : badge('available', t('yes')) }
     ]
   }
