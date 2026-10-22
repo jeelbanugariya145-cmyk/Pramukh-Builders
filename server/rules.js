@@ -2,8 +2,9 @@
 import { db } from './db.js';
 import { normMobile } from './auth.js';
 
-// The material bills section is switched off unless MATERIALS=on is set on the server
+// The material bills and complaints sections are switched off unless MATERIALS=on / COMPLAINTS=on is set on the server
 export const MATERIALS = process.env.MATERIALS === 'on';
+export const COMPLAINTS = process.env.COMPLAINTS === 'on';
 
 // What a partner can tick for each staff member, supervisor or contractor
 export const PERMS = ['daily', 'dailyView', 'complaints', 'flats', 'approvals', 'visitors', 'materials'];
@@ -27,6 +28,7 @@ export const onSite = u => u.role === 'contractor' || (u.role === 'staff' && (u.
 export function can(u, perm) {
   if (perm === 'approvals') return u.role !== 'customer' && canApprove(u);
   if (perm === 'materials' && !MATERIALS) return false;
+  if (perm === 'complaints' && !COMPLAINTS) return false;
   // Contractors always see and answer complaints for their wing
   if (u.role === 'contractor' && perm === 'complaints') return true;
   // Contractors never handle flat owners or approve plan changes

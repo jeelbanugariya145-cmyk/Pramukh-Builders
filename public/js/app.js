@@ -20,6 +20,7 @@ function can(perm) {
   // Only the people ticked as approvers can approve or reject plan changes (worked out by the server)
   if (perm === 'approvals') return !!(Store.me && Store.me.canApprove);
   if (perm === 'materials' && !Store.materials) return false;
+  if (perm === 'complaints' && !Store.complaints) return false;
   if (isContractor() && (perm === 'flats' || perm === 'approvals')) return false;
   // Contractors always see and answer complaints for their wing
   if (isContractor() && perm === 'complaints') return true;
@@ -36,7 +37,7 @@ function pagesFor() {
   if (isContractor()) {
     return [
       { id: 'sitelist', icon: '🏗️' },
-      { id: 'complaints', icon: '📢' },
+      can('complaints') && { id: 'complaints', icon: '📢' },
       seesDaily() && { id: 'daily', icon: '📋' },
       { id: 'info', icon: '🏙️' },
       { id: 'settings', icon: '⚙️' }
@@ -90,6 +91,7 @@ async function boot() {
   }
   Store.ai = status.ai;
   Store.materials = status.materials;
+  Store.complaints = status.complaints;
   if (status.needsSetup) return renderLogin({ setup: true });
   if (!status.user) return renderLogin({});
   Store.me = status.user;

@@ -8,8 +8,8 @@
 | લોગિન | શું જોઈ / કરી શકે |
 |---|---|
 | **ભાગીદાર** | બધું. સ્ટાફ, કોન્ટ્રાક્ટરના લોગિન બનાવવા, બેકઅપ |
-| **સ્ટાફ / સુપરવાઇઝર** | ભાગીદાર જે ટિક કરે તે જ: દૈનિક રિપોર્ટ લખવો · બધાના દૈનિક રિપોર્ટ જોવા · ફરિયાદ · ફ્લેટ માલિકો · પ્લાન મંજૂરી (સિવિલ) · દૈનિક મુલાકાતીઓ |
-| **કોન્ટ્રાક્ટર** | પોતાની વિંગની **ફરિયાદો** (જવાબ આપે) અને **ફ્લેટ ફેરફાર લિસ્ટ** (ગ્રાહકનું નામ કે નંબર નહીં). ભાગીદાર ટિક કરે તો દૈનિક રિપોર્ટ પણ |
+| **સ્ટાફ / સુપરવાઇઝર** | ભાગીદાર જે ટિક કરે તે જ: દૈનિક રિપોર્ટ લખવો · બધાના દૈનિક રિપોર્ટ જોવા · ફ્લેટ માલિકો · પ્લાન મંજૂરી (સિવિલ) · દૈનિક મુલાકાતીઓ |
+| **કોન્ટ્રાક્ટર** | પોતાની વિંગનું **ફ્લેટ ફેરફાર લિસ્ટ** (ગ્રાહકનું નામ કે નંબર નહીં). ભાગીદાર ટિક કરે તો દૈનિક રિપોર્ટ પણ |
 
 દરેક સુપરવાઇઝર અને કોન્ટ્રાક્ટરને **વિંગ A, વિંગ B કે બંને** સોંપાય છે. તેમને ફક્ત પોતાની વિંગનું જ દેખાય છે.
 | **ફ્લેટ માલિક** | ફક્ત **પોતાનો ફ્લેટ**: વિગત, પ્લાન, ફેરફારની વિનંતી અને તેનો જવાબ. બીજા કોઈ ફ્લેટ કે ગ્રાહકની માહિતી નહીં |
@@ -19,8 +19,7 @@
 - **📋 દૈનિક કામ:** સુપરવાઇઝર રોજ "આજે શું કામ થયું" લખે, સાઇટના ફોટા મૂકે અને "આવતીકાલે શું કામ થશે" લખે.
   બીજા દિવસે એ લિસ્ટ **ચેકલિસ્ટ** બનીને આવે: દરેક કામ ✓ થયું / ✕ નથી થયું. બાકી રહેલું કામ એક ટચમાં ફરી આવતીકાલમાં ઉમેરાય.
   ભાગીદારો "બધાના રિપોર્ટ" માં દરેક સુપરવાઇઝરનું કામ, ફોટા અને ચેકલિસ્ટ જુએ.
-- **📢 ફરિયાદ:** ભાગીદાર (કે પરવાનગીવાળા સુપરવાઇઝર) વિંગ પસંદ કરીને ફરિયાદ નોંધે, ફોટા સાથે. એ વિંગના કોન્ટ્રાક્ટર અને સુપરવાઇઝર શું પગલું લીધું તે ફોટા સાથે લખે અને "કામ ચાલુ" / "કામ પૂરું" કરે.
-  ભાગીદાર ચકાસીને ફરિયાદ **બંધ** કરે, કે **ફરી ખોલે**. આખી વાતચીત એક જગ્યાએ રહે છે.
+- **📢 ફરિયાદ** (અત્યારે બંધ છે; સર્વર પર `COMPLAINTS=on` કરવાથી ચાલુ થાય).
 - **✅ મંજૂરી કોણ આપે:** "લોગિન / સ્ટાફ" માં જેને **"પ્લાન ફેરફાર મંજૂર / નામંજૂર કરી શકે = હા"** કરો (દા.ત. 2 વ્યક્તિ), ફક્ત તેઓ જ નિર્ણય આપી શકે. નામંજૂર કરવા કારણ ફરજિયાત.
 - **🏗️ ફ્લેટ ફેરફાર લિસ્ટ:** કોન્ટ્રાક્ટર અને સુપરવાઇઝરને પોતાની વિંગના બધા ફ્લેટનું એક જ લિસ્ટ: ફેરફાર કરવાના / ફેરફાર પૂરા / ફેરફાર નથી, મંજૂર પ્લાન અને ફોટા સાથે.
 - **📐 પ્લાન ફેરફાર:** ફ્લેટ માલિક પોતાના લોગિનમાંથી ફેરફારવાળા પ્લાનની **PDF અને AutoCAD (.dwg/.dxf) ફાઇલ, બંને ફરજિયાત**, મોકલે → સિવિલ વિભાગ મંજૂર / નામંજૂર કરે (કારણ સાથે, જરૂર હોય તો ફાઇનલ પ્લાન મૂકે) → મંજૂર થયેલું કોન્ટ્રાક્ટરને દેખાય → કામ પૂરું થાય એટલે કોન્ટ્રાક્ટર "કામ પૂરું થયું" દબાવે.
@@ -87,7 +86,7 @@ contractors and flat owners each log in with mobile number + PIN and see only wh
 - **Plan changes:** owner uploads a marked-up plan → civil approver approves/rejects (optional final drawing) → contractor sees approved changes and marks them done. Flats with approved changes are highlighted in the chart and list.
 - **Material bills:** photo → Claude (`claude-opus-5-5`, structured output) extracts supplier, bill no., date, items, GST and total for review; monthly per-supplier totals with paid ticks; bank statement CSV/PDF matched to pending bills by amount and supplier name.
 - **Daily site reports:** supervisors log work done, photos and tomorrow's plan; the next day the plan becomes a done / not-done checklist. Partners see every supervisor's report per day.
-- Material bills are switched off by default (`MATERIALS=on` enables them).
+- Material bills and complaints are switched off by default (`MATERIALS=on` / `COMPLAINTS=on` enable them).
 - **Complaints:** partners (and ticked supervisors) raise a complaint for a wing; that wing's contractor and supervisors reply with actions and photos; the raiser closes or reopens it. Supervisors and contractors are assigned to Wing A, Wing B or both and only see their wings.
 - **Daily visitors**, flat chart, quotations, project info from the brochure.
 

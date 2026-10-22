@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { db, save, flush, newId, find, replaceAll, writeFile, readFile, storageMode, FILE_TYPES, COLLECTIONS } from './db.js';
 import { login, logout, currentUser, parseCookies, hashPin, validPin, normMobile } from './auth.js';
-import { PERMS, WINGS, MATERIALS, FIELDS, REFS, can, canWrite, readableData, canReadFile, customerBookings, seesWing, canSeeComplaint, onSite } from './rules.js';
+import { PERMS, WINGS, MATERIALS, COMPLAINTS, FIELDS, REFS, can, canWrite, readableData, canReadFile, customerBookings, seesWing, canSeeComplaint, onSite } from './rules.js';
 import { aiEnabled, readBill, readStatement, aiErrorCode } from './ai.js';
 import { setupPramukhView, loadDemo } from './demo.js';
 
@@ -139,7 +139,7 @@ async function api(req, res, url) {
   if (route === 'GET /status') {
     return send(res, 200, {
       needsSetup: db.users.length === 0, user: user && { ...user, canApprove: can(user, 'approvals') },
-      ai: aiEnabled(), materials: MATERIALS
+      ai: aiEnabled(), materials: MATERIALS, complaints: COMPLAINTS
     });
   }
 
