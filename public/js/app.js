@@ -39,19 +39,17 @@ function pagesFor() {
       { id: 'sitelist', icon: '🏗️' },
       can('complaints') && { id: 'complaints', icon: '📢' },
       seesDaily() && { id: 'daily', icon: '📋' },
-      { id: 'info', icon: '🏙️' },
       { id: 'settings', icon: '⚙️' }
     ].filter(Boolean);
   }
   const pages = [
     { id: 'dashboard', icon: '📊' },
+    // Supervisors get only the flat change list, not the office flat pages
+    (!onSite() || officeChanges()) && { id: 'flats', icon: '🏢', tabs: ['holders', Store.has('bookings') && 'bookings', isPartner() && 'units', isPartner() && 'projects'] },
+    officeChanges() && { id: 'changes', icon: '📐' },
+    onSite() && !officeChanges() && { id: 'sitelist', icon: '🏗️' },
     seesDaily() && { id: 'daily', icon: '📋' },
     can('complaints') && { id: 'complaints', icon: '📢' },
-    onSite() && !officeChanges() && { id: 'sitelist', icon: '🏗️' },
-    { id: 'info', icon: '🏙️' },
-    // Supervisors get only the flat change list, not the office flat pages
-    (!onSite() || officeChanges()) && { id: 'flats', icon: '🏢', tabs: ['chart', 'units', isPartner() && 'projects', Store.has('bookings') && 'bookings'] },
-    officeChanges() && { id: 'changes', icon: '📐' },
     can('materials') && { id: 'materials', icon: '🧱', tabs: ['bills', 'monthly', 'bank', 'expenses'] },
     can('visitors') && { id: 'visitors', icon: '🚶', tabs: ['visitors'] },
     isPartner() && { id: 'users', icon: '👥', tabs: ['users'] },
@@ -177,7 +175,6 @@ function render() {
 
   if (page.id === 'myflat') return renderMyFlat(main);
   if (page.id === 'dashboard') return renderDashboard(main);
-  if (page.id === 'info') return renderInfo(main);
   if (page.id === 'changes') return renderChanges(main);
   if (page.id === 'daily') return renderDaily(main);
   if (page.id === 'complaints') return renderComplaints(main);
@@ -195,7 +192,7 @@ function render() {
 
   const body = document.createElement('div');
   main.appendChild(body);
-  if (tab === 'chart') renderChart(body);
+  if (tab === 'holders') renderHolders(body);
   else if (tab === 'monthly') renderMonthly(body);
   else if (tab === 'bank') renderBankMatch(body);
   else renderList(body, tab);

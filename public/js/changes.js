@@ -81,6 +81,89 @@ function changeCard(c, { actions = '', showCustomer = true } = {}) {
     </article>`;
 }
 
+// ---------- A flat's plan: regular, or old drawing + new changed plan ----------
+function planView(u, changes) {
+  const plan = PLAN_IMAGE[u.bhk];
+  const approved = changes.filter(c => c.status === 'approved' || c.status === 'done')
+    .sort((a, b) => (a.reviewedAt || a.createdAt || '').localeCompare(b.reviewedAt || b.createdAt || ''));
+  const pending = changes.filter(c => c.status === 'pending');
+  const oldPlan = plan ? `<a href="${plan}" target="_blank" rel="noopener"><img class="my-plan" src="${plan}" alt="${esc(u.bhk)} BHK plan"></a>` : '';
+
+  if (!approved.length) {
+    return `
+      <div class="plan-banner plan-regular">✓ ${t('plan_regular')}</div>
+      ${pending.length ? `<p class="hint">⏳ ${t('plan_pendingNote')}</p>` : ''}
+      ${oldPlan}`;
+  }
+  return `
+    <div class="plan-banner plan-changed">✎ ${t('plan_changed')}</div>
+    ${pending.length ? `<p class="hint">⏳ ${t('plan_pendingNote')}</p>` : ''}
+    <h3 class="section-title"><span>${t('plan_old')}</span></h3>
+    ${oldPlan}
+    <h3 class="section-title"><span>${t('plan_new')}</span></h3>
+    ${approved.map(c => `
+      <div class="new-plan">
+        <div class="between"><p class="change-desc">${esc(c.description)}</p>${changeBadge(c)}</div>
+        ${planFileLinks(c)}
+        ${thumbs(c.finalFiles, (c.finalFiles || []).length ? t('finalPlan') : '')}
+        ${c.remark ? `<p class="change-remark"><strong>${t('remark')}:</strong> ${esc(c.remark)}</p>` : ''}
+      </div>`).join('')}`;
+}
+
+// ---------- Office: one flat's holder, login and plan ----------
+function openFlatSheet(unitId) {
+  const u = Store.get('units', unitId);
+  if (!u) return;
+  const owner = Calc.unitBooking(u);
+  const changes = Store.list('changeRequests').filter(c => c.unitId === u.id)
+    .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  const editable = can('flats');
+  const reviewer = can('approvals');
+  const dlg = $('#modal');
+  dlg.innerHTML = `
+    <div class="modal-card flat-sheet">
+      <div class="between"><h2>${t('flat')} ${esc(Calc.unitCode(u))}</h2><button class="btn btn-small" data-close>${t('close')}</button></div>
+      <p class="hint">${u.bhk ? esc(u.bhk) + ' BHK · ' : ''}${t('floor')} ${esc(u.floor)}${u.area ? ` · ${esc(u.area)} sq ft` : ''}</p>
+
+      <section class="holder-box">
+        <h3>${t('holder')}</h3>
+        ${owner ? `
+          <div><strong>${esc(owner.customerName)}</strong></div>
+          <div class="hint">${t('loginMobile')}: <strong>${esc(owner.phone)}</strong> · ${owner.hasLogin ? `<span class="pos">✓ ${t('loginOn')}</span>` : `<span class="neg">${t('loginOff')}</span>`}</div>
+          ${editable ? `<div class="row-gap">
+            <button class="btn btn-small btn-primary" data-edit-holder>${t('editHolder')}</button>
+            ${owner.phone ? `<button class="btn btn-small btn-accent" data-share-login>💬 ${t('sendLogin')}</button>` : ''}
+          </div>` : ''}`
+        : `<p class="hint">${t('holderNone')}</p>
+           ${editable ? `<button class="btn btn-primary" data-add-holder>+ ${t('addHolder')}</button>` : ''}`}
+      </section>
+
+      <section>
+        <h3>${t('typicalPlan')}</h3>
+        ${planView(u, changes)}
+      </section>
+
+      ${changes.length ? `<section>
+        <h3>${t('ent_changeRequests')} (${changes.length})</h3>
+        ${changes.map(c => changeCard(c, {
+          actions: reviewer ? `<button class="btn btn-small btn-primary" data-review="${c.id}">${c.status === 'pending' ? t('review') : t('changeDecision')}</button>` : ''
+        })).join('')}
+      </section>` : ''}
+    </div>`;
+
+  const reopen = () => openFlatSheet(unitId);
+  $('[data-close]', dlg).addEventListener('click', () => dlg.close());
+  const add = $('[data-add-holder]', dlg);
+  if (add) add.addEventListener('click', () => openForm('bookings', null, { unitId: u.id }, { onSaved: reopen }));
+  const edit = $('[data-edit-holder]', dlg);
+  if (edit) edit.addEventListener('click', () => openForm('bookings', owner, null, { onSaved: reopen }));
+  const share = $('[data-share-login]', dlg);
+  if (share) share.addEventListener('click', () => shareLogin(owner));
+  dlg.querySelectorAll('[data-review]').forEach(b => b.addEventListener('click', () => openReview(Store.get('changeRequests', b.dataset.review))));
+  if (!dlg.open) dlg.showModal();
+  dlg.scrollTop = 0;
+}
+
 // ---------- Flat owner: only their own flat ----------
 function renderMyFlat(main) {
   const bookings = Store.list('bookings');
@@ -95,7 +178,6 @@ function renderMyFlat(main) {
     if (!u) return;
     const requests = Store.list('changeRequests').filter(c => c.bookingId === b.id)
       .sort((a, z) => (z.createdAt || '').localeCompare(a.createdAt || ''));
-    const plan = PLAN_IMAGE[u.bhk];
     main.insertAdjacentHTML('beforeend', `
       <section class="card my-flat">
         <div class="my-flat-head">
@@ -111,10 +193,9 @@ function renderMyFlat(main) {
           </div>
         </div>
 
-        ${plan ? `
         <h3 class="section-title"><span>${t('typicalPlan')}</span></h3>
-        <a href="${plan}" target="_blank" rel="noopener"><img class="my-plan" src="${plan}" alt="${esc(u.bhk)} BHK plan"></a>
-        <p class="hint">${t('typicalPlanHelp')}</p>` : ''}
+        ${planView(u, requests)}
+        <p class="hint">${t('typicalPlanHelp')}</p>
 
         <h3 class="section-title"><span>${t('requestChange')}</span></h3>
         <form class="change-form" data-booking="${b.id}" novalidate>

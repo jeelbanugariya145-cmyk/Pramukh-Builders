@@ -124,9 +124,8 @@ function renderDashboard(main) {
   }));
 }
 
-// ---------- Flat chart ----------
-// Shows each flat's plan change status
-function renderChart(container) {
+// ---------- Flat holders: every flat, coloured by its plan status ----------
+function renderHolders(container) {
   const projects = Store.list('projects').filter(p => Store.list('units').some(u => u.projectId === p.id));
   if (!projects.length) {
     container.innerHTML = `<div class="card"><p>${t('ch_noUnits')}</p></div>`;
@@ -136,15 +135,9 @@ function renderChart(container) {
   const units = Store.list('units').filter(u => u.projectId === pid);
   const wings = [...new Set(units.map(u => u.wing || ''))].sort();
   const floorNum = u => Number(u.floor) || 0;
-
-  const cellInfo = u => {
-    const c = Calc.unitChange(u);
-    const status = c ? c.status : 'none';
-    return { cls: 'flat-ch-' + status, sub: c ? t('cs_' + c.status) : (u.bhk ? u.bhk + ' BHK' : '') };
-  };
-
+  const statusOf = u => { const c = Calc.unitChange(u); return c && c.status !== 'rejected' ? c.status : 'none'; };
   const counts = {};
-  units.forEach(u => { const c = Calc.unitChange(u); const k = c ? c.status : 'none'; counts[k] = (counts[k] || 0) + 1; });
+  units.forEach(u => { const k = statusOf(u); counts[k] = (counts[k] || 0) + 1; });
 
   const wingHtml = wing => {
     const wu = units.filter(u => (u.wing || '') === wing);
@@ -154,7 +147,7 @@ function renderChart(container) {
       <div class="wing">
         <div class="wing-head">
           <h3>${wing ? `${t('wing')} ${esc(wing)}` : t('units')}</h3>
-          <span class="hint">${bhks.map(b => b + ' BHK').join(', ')} · ${wu.length} ${t('units')}</span>
+          <span class="hint">${bhks.map(b => b + ' BHK').join(', ')}</span>
         </div>
         <div class="floors">
           ${floors.map(f => `
@@ -163,10 +156,10 @@ function renderChart(container) {
               ${wu.filter(u => floorNum(u) === f)
                 .sort((a, b) => String(a.number).localeCompare(String(b.number), 'en', { numeric: true }))
                 .map(u => {
-                  const info = cellInfo(u);
-                  return `<button class="flat ${info.cls}" data-unit="${u.id}" title="${esc(Calc.unitLabel(u.id))}">
+                  const owner = Calc.unitBooking(u);
+                  return `<button class="flat flat-ch-${statusOf(u)}" data-unit="${u.id}" title="${esc(Calc.unitLabel(u.id))}">
                     <span class="flat-no">${esc(u.number)}</span>
-                    <span class="flat-who">${esc(info.sub)}</span>
+                    <span class="flat-who">${owner ? esc(owner.customerName) : '—'}</span>
                   </button>`;
                 }).join('')}
             </div>`).join('')}
@@ -174,108 +167,17 @@ function renderChart(container) {
       </div>`;
   };
 
-  const legend = ['approved', 'done', ...(Store.list('changeRequests').some(c => c.status === 'pending') ? ['pending'] : []), 'none']
-      .map(k => `<span class="legend"><i class="dot dot-ch-${k}"></i>${k === 'none' ? t('ch_none') : t('cs_' + k)} ${counts[k] || 0}</span>`).join('');
-
   container.innerHTML = `
-    <div class="toolbar">
-      ${projects.length > 1 ? `<label class="inline">${t('project')}
-        <select id="chart-project">
-          ${projects.map(p => `<option value="${p.id}" ${p.id === pid ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}
-        </select>
-      </label>` : ''}
-    </div>
-    <div class="toolbar legends">${legend}</div>
-    <p class="hint">${t('ch_helpChanges')}</p>
+    ${projects.length > 1 ? `<div class="toolbar"><label class="inline">${t('project')}
+      <select id="chart-project">${projects.map(p => `<option value="${p.id}" ${p.id === pid ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label></div>` : ''}
+    <p class="hint">${t('holdersHelp')}</p>
+    <div class="toolbar legends">${['none', 'pending', 'approved', 'done'].map(k =>
+      `<span class="legend"><i class="dot dot-ch-${k}"></i>${k === 'none' ? t('plan_regularShort') : t('cs_' + k)} ${counts[k] || 0}</span>`).join('')}</div>
     <div class="wings">${wings.map(wingHtml).join('')}</div>`;
 
   const sel = $('#chart-project', container);
   if (sel) sel.addEventListener('change', e => { state.chartProject = e.target.value; render(); });
-  container.querySelectorAll('[data-unit]').forEach(btn => btn.addEventListener('click', () => {
-    const c = Calc.unitChange(Store.get('units', btn.dataset.unit));
-    if (c) openChangeDetail(c);
-  }));
-}
-
-// ---------- Project info (from brochure) ----------
-function renderInfo(main) {
-  const total = BRAND.wings.reduce((n, w) => n + w.floors * w.perFloor, 0);
-  const rooms = bhk => `
-    <table class="table rooms">
-      <tbody>${BRAND.rooms[bhk].map(r => `<tr><td>${pick(r[0], r[1])}</td><td class="num">${r[2]}</td></tr>`).join('')}</tbody>
-    </table>`;
-
-  main.innerHTML = `
-    ${heroBanner()}
-    <div class="stats">
-      <div class="stat"><div class="stat-label">${t('i_flats')}</div><div class="stat-value">${total}</div></div>
-      <div class="stat"><div class="stat-label">${t('i_years')}</div><div class="stat-value">${BRAND.years}</div></div>
-      <div class="stat"><div class="stat-label">${t('i_customers')}</div><div class="stat-value">${BRAND.customers}</div></div>
-      <div class="stat"><div class="stat-label">${t('floor')}</div><div class="stat-value">G + 14</div></div>
-    </div>
-
-    <section class="card contact-card">
-      <div>
-        <div class="hint">${t('i_site')}</div>
-        <p class="address">${pick(BRAND.address, BRAND.addressGu)}</p>
-      </div>
-      <div class="row-gap">
-        <a class="btn btn-primary" href="tel:+91${BRAND.phone}">📞 ${t('i_call')} ${BRAND.phoneDisplay}</a>
-        <a class="btn btn-accent" href="https://wa.me/91${BRAND.phone}" target="_blank" rel="noopener">💬 WhatsApp</a>
-        <a class="btn" href="${BRAND.mapUrl}" target="_blank" rel="noopener">📍 ${t('i_map')}</a>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2 class="section-title"><span>${t('i_plans')}</span></h2>
-      <div class="plans">
-        <figure><img src="assets/plan-4bhk.jpg" alt="4 BHK plan" loading="lazy"><figcaption>${t('i_wingA')}</figcaption>${rooms(4)}</figure>
-        <figure><img src="assets/plan-3bhk.jpg" alt="3 BHK plan" loading="lazy"><figcaption>${t('i_wingB')}</figcaption>${rooms(3)}</figure>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2 class="section-title"><span>${t('i_amenities')}</span></h2>
-      <div class="amenities">
-        ${BRAND.amenities.map(a => `<div class="amenity"><span class="amenity-icon">${a[0]}</span><span>${pick(a[1], a[2])}</span></div>`).join('')}
-      </div>
-      <div class="gallery">
-        <img src="assets/club.jpg" alt="" loading="lazy">
-        <img src="assets/day-view.jpg" alt="" loading="lazy">
-        <img src="assets/aerial.jpg" alt="" loading="lazy">
-      </div>
-    </section>
-
-    <section class="card">
-      <h2 class="section-title"><span>${t('i_specs')}</span></h2>
-      <div class="specs">
-        ${BRAND.specs.map(sp => `<div class="spec"><strong>${pick(sp[0], sp[1])}</strong><span>${pick(sp[2], sp[3])}</span></div>`).join('')}
-      </div>
-    </section>
-
-    <section class="card">
-      <h2 class="section-title"><span>${t('i_location')}</span></h2>
-      <div class="location">
-        <img src="assets/location-map.jpg" alt="Location map">
-        <div>
-          <h3>${t('i_nearby')}</h3>
-          <ul class="chips">${BRAND.landmarks.map(l => `<li>${esc(l)}</li>`).join('')}</ul>
-          <a class="btn" href="${BRAND.mapUrl}" target="_blank" rel="noopener">📍 ${t('i_map')}</a>
-        </div>
-      </div>
-    </section>
-
-    <section class="card about">
-      <h2 class="section-title"><span>${t('i_about')}</span></h2>
-      <div class="group-logos">
-        <img src="assets/logo-pramukh-builders.jpg" alt="Pramukh Builders">
-        <span class="divider"></span>
-        <img src="assets/logo-shreeji-builders.jpg" alt="Shreeji Builders">
-      </div>
-      <p>${t('i_aboutText')}</p>
-      <h3>${t('i_past')}</h3>
-      <ul class="chips">${BRAND.pastProjects.map(l => `<li>${esc(l)}</li>`).join('')}</ul>
-    </section>`;
+  container.querySelectorAll('[data-unit]').forEach(btn => btn.addEventListener('click', () => openFlatSheet(btn.dataset.unit)));
 }
 
 // ---------- Settings ----------
