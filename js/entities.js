@@ -13,6 +13,8 @@ const ENTITIES = {
       { name: 'location', label: 'location' },
       { name: 'startDate', label: 'startDate', type: 'date' },
       { name: 'status', label: 'status', type: 'select', options: opts('st_', ['planning', 'ongoing', 'completed']), default: 'ongoing' },
+      { name: 'price3', label: 'price3', type: 'number' },
+      { name: 'price4', label: 'price4', type: 'number' },
       { name: 'notes', label: 'notes', type: 'textarea' }
     ],
     columns: [
@@ -34,21 +36,27 @@ const ENTITIES = {
   units: {
     fields: [
       { name: 'projectId', label: 'project', type: 'select', options: projectOptions, required: true },
+      { name: 'wing', label: 'wing' },
       { name: 'number', label: 'unitNo', required: true },
       { name: 'type', label: 'type', type: 'select', options: opts('ut_', ['flat', 'shop', 'bungalow', 'plot', 'office']), default: 'flat' },
+      { name: 'bhk', label: 'bhk', type: 'select', options: () => ['1', '2', '3', '4', '5'].map(v => ({ value: v, label: v + ' BHK' })) },
       { name: 'floor', label: 'floor' },
       { name: 'area', label: 'area', type: 'number' },
-      { name: 'price', label: 'price', type: 'number', required: true }
+      { name: 'parking', label: 'parking', type: 'number' },
+      { name: 'price', label: 'priceOptional', type: 'number' }
     ],
     columns: [
       { label: 'project', value: r => esc(Calc.projectName(r.projectId)) },
-      { label: 'unitNo', value: r => `<strong>${esc(r.number)}</strong>` },
-      { label: 'type', value: r => t('ut_' + r.type) },
+      { label: 'unitNo', value: r => `<strong>${esc(Calc.unitCode(r))}</strong>` },
+      { label: 'type', value: r => r.bhk ? `${esc(r.bhk)} BHK` : t('ut_' + r.type) },
       { label: 'floor', value: r => esc(r.floor) },
       { label: 'area', value: r => esc(r.area), num: true },
-      { label: 'price', value: r => money(r.price), num: true },
+      { label: 'parking', value: r => esc(r.parking), num: true },
+      { label: 'price', value: r => { const p = Calc.unitPrice(r); return p ? money(p) : '—'; }, num: true },
       { label: 'status', value: r => { const s = Calc.unitStatus(r); return badge(s, t('us_' + s)); } }
     ],
+    extraActions: [{ label: 'quotation', run: r => printQuotation(r) }],
+    sort: (a, b) => Calc.unitCode(a).localeCompare(Calc.unitCode(b), 'en', { numeric: true }),
     refs: [{ coll: 'bookings', field: 'unitId' }]
   },
 
@@ -59,11 +67,15 @@ const ENTITIES = {
         // Only units that are not booked yet (plus the one being edited)
         options: current => Store.list('units')
           .filter(u => !Calc.unitBooking(u) || u.id === current.unitId)
-          .map(u => ({ value: u.id, label: `${Calc.unitLabel(u.id)} — ${money(u.price)}` })),
+          .sort(ENTITIES.units.sort)
+          .map(u => {
+            const price = Calc.unitPrice(u);
+            return { value: u.id, label: Calc.unitLabel(u.id) + (u.bhk ? ` (${u.bhk} BHK)` : '') + (price ? ` — ${money(price)}` : '') };
+          }),
         onChange: (form, value) => {
           const u = Store.get('units', value);
           const total = form.elements.totalAmount;
-          if (u && !total.value) total.value = u.price;
+          if (u && !total.value && Calc.unitPrice(u)) total.value = Calc.unitPrice(u);
         }
       },
       { name: 'customerName', label: 'customerName', required: true },
@@ -82,6 +94,7 @@ const ENTITIES = {
       { label: 'paid', value: r => money(Calc.bookingPaid(r)), num: true },
       { label: 'due', value: r => { const d = Calc.bookingDue(r); return `<span class="${d > 0 ? 'neg' : 'pos'}">${money(d)}</span>`; }, num: true }
     ],
+    extraActions: [{ label: 'whatsapp', run: r => sendReminder(r), show: r => r.phone && Calc.bookingDue(r) > 0 }],
     refs: [{ coll: 'payments', field: 'bookingId' }]
   },
 
@@ -107,7 +120,7 @@ const ENTITIES = {
       { label: 'mode', value: r => t('pm_' + r.mode) },
       { label: 'reference', value: r => esc(r.reference) }
     ],
-    extraAction: { label: 'receipt', run: r => printReceipt(r) },
+    extraActions: [{ label: 'receipt', run: r => printReceipt(r) }],
     sort: (a, b) => (b.date || '').localeCompare(a.date || '')
   },
 

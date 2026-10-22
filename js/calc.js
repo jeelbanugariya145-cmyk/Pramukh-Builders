@@ -19,10 +19,21 @@ const Calc = {
     return p ? p.name : '';
   },
 
+  unitCode(u) {
+    return u.wing ? `${u.wing}-${u.number}` : String(u.number);
+  },
+
   unitLabel(id) {
     const u = Store.get('units', id);
     if (!u) return '';
-    return `${this.projectName(u.projectId)} - ${u.number}`;
+    return `${this.projectName(u.projectId)} - ${this.unitCode(u)}`;
+  },
+
+  // Unit's own price, or the project's price for that BHK
+  unitPrice(u) {
+    if (Number(u.price)) return Number(u.price);
+    const p = Store.get('projects', u.projectId);
+    return (p && u.bhk && Number(p['price' + u.bhk])) || 0;
   },
 
   bookingLabel(id) {

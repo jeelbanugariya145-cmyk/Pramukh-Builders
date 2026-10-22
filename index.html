@@ -3,25 +3,31 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Pramukh Builders</title>
+  <meta name="theme-color" content="#EE751C">
+  <title>Pramukh View</title>
+  <link rel="icon" href="assets/logo-pramukh-view.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@500;700&family=Noto+Sans+Gujarati:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <div class="app">
     <aside class="sidebar">
       <div class="brand">
-        <div class="brand-logo">🏗️</div>
-        <div>
-          <div id="brand-name" class="brand-name"></div>
-          <div id="brand-sub" class="brand-sub"></div>
-        </div>
+        <img class="brand-logo" src="assets/logo-pramukh-view.jpg" alt="Pramukh View">
         <button id="lang-toggle" class="btn btn-small lang-toggle"></button>
       </div>
       <nav id="nav" class="nav"></nav>
-      <p id="demo-note" class="demo-note"></p>
+      <div class="developers">
+        <div id="developers-label" class="developers-label"></div>
+        <div class="group-logos">
+          <img src="assets/logo-pramukh-builders.jpg" alt="Pramukh Builders">
+          <span class="divider"></span>
+          <img src="assets/logo-shreeji-builders.jpg" alt="Shreeji Builders">
+        </div>
+        <p id="demo-note" class="demo-note"></p>
+      </div>
     </aside>
     <main id="main" class="main"></main>
   </div>
@@ -30,6 +36,7 @@
   <div id="print-area"></div>
 
   <script src="js/i18n.js"></script>
+  <script src="js/brand.js"></script>
   <script src="js/store.js"></script>
   <script src="js/calc.js"></script>
   <script src="js/entities.js"></script>
