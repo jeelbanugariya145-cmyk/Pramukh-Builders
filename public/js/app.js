@@ -17,6 +17,8 @@ const isPartner = () => Store.me && Store.me.role === 'partner';
 const isContractor = () => Store.me && Store.me.role === 'contractor';
 const isCustomer = () => Store.me && Store.me.role === 'customer';
 function can(perm) {
+  // Only the people ticked as approvers can approve or reject plan changes (worked out by the server)
+  if (perm === 'approvals') return !!(Store.me && Store.me.canApprove);
   if (perm === 'materials' && !Store.materials) return false;
   if (isContractor() && (perm === 'flats' || perm === 'approvals')) return false;
   // Contractors always see and answer complaints for their wing
@@ -24,16 +26,18 @@ function can(perm) {
   return isPartner() || (Store.me && ['staff', 'contractor'].includes(Store.me.role) && Store.me.perms.includes(perm));
 }
 const seesDaily = () => can('daily') || can('dailyView');
+// Contractors and supervisors (staff with a wing) get the site list of flats to change
+const onSite = () => isContractor() || (Store.me && Store.me.role === 'staff' && (Store.me.wings || []).length > 0);
+const officeChanges = () => !isContractor() && (can('approvals') || can('flats'));
 
 // Menu pages and the tabs inside them, filtered by what this person may use
 function pagesFor() {
   if (isCustomer()) return [{ id: 'myflat', icon: '🏠' }];
   if (isContractor()) {
     return [
+      { id: 'sitelist', icon: '🏗️' },
       { id: 'complaints', icon: '📢' },
-      { id: 'changes', icon: '📐' },
       seesDaily() && { id: 'daily', icon: '📋' },
-      { id: 'flats', icon: '🏢', tabs: ['chart'] },
       { id: 'info', icon: '🏙️' },
       { id: 'settings', icon: '⚙️' }
     ].filter(Boolean);
@@ -42,9 +46,11 @@ function pagesFor() {
     { id: 'dashboard', icon: '📊' },
     seesDaily() && { id: 'daily', icon: '📋' },
     can('complaints') && { id: 'complaints', icon: '📢' },
+    onSite() && !officeChanges() && { id: 'sitelist', icon: '🏗️' },
     { id: 'info', icon: '🏙️' },
-    { id: 'flats', icon: '🏢', tabs: ['chart', 'units', isPartner() && 'projects', Store.has('bookings') && 'bookings'] },
-    (can('approvals') || can('flats')) && { id: 'changes', icon: '📐' },
+    // Supervisors get only the flat change list, not the office flat pages
+    (!onSite() || officeChanges()) && { id: 'flats', icon: '🏢', tabs: ['chart', 'units', isPartner() && 'projects', Store.has('bookings') && 'bookings'] },
+    officeChanges() && { id: 'changes', icon: '📐' },
     can('materials') && { id: 'materials', icon: '🧱', tabs: ['bills', 'monthly', 'bank', 'expenses'] },
     can('visitors') && { id: 'visitors', icon: '🚶', tabs: ['visitors'] },
     isPartner() && { id: 'users', icon: '👥', tabs: ['users'] },
@@ -173,6 +179,7 @@ function render() {
   if (page.id === 'changes') return renderChanges(main);
   if (page.id === 'daily') return renderDaily(main);
   if (page.id === 'complaints') return renderComplaints(main);
+  if (page.id === 'sitelist') return renderSiteList(main);
   if (page.id === 'settings') return renderSettings(main);
 
   const tab = page.tabs.includes(state.tab[page.id]) ? state.tab[page.id] : page.tabs[0];

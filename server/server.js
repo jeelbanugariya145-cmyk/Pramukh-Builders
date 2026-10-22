@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { db, save, flush, newId, find, replaceAll, writeFile, readFile, storageMode, FILE_TYPES, COLLECTIONS } from './db.js';
 import { login, logout, currentUser, parseCookies, hashPin, validPin, normMobile } from './auth.js';
-import { PERMS, WINGS, MATERIALS, FIELDS, REFS, can, canWrite, readableData, canReadFile, customerBookings, seesWing, canSeeComplaint } from './rules.js';
+import { PERMS, WINGS, MATERIALS, FIELDS, REFS, can, canWrite, readableData, canReadFile, customerBookings, seesWing, canSeeComplaint, onSite } from './rules.js';
 import { aiEnabled, readBill, readStatement, aiErrorCode } from './ai.js';
 import { setupPramukhView, loadDemo } from './demo.js';
 
@@ -121,7 +121,10 @@ async function api(req, res, url) {
   const route = `${method} /${parts.join('/')}`;
 
   if (route === 'GET /status') {
-    return send(res, 200, { needsSetup: db.users.length === 0, user, ai: aiEnabled(), materials: MATERIALS });
+    return send(res, 200, {
+      needsSetup: db.users.length === 0, user: user && { ...user, canApprove: can(user, 'approvals') },
+      ai: aiEnabled(), materials: MATERIALS
+    });
   }
 
   if (route === 'POST /setup') {
@@ -130,7 +133,7 @@ async function api(req, res, url) {
     const mobile = normMobile(body.mobile);
     if (!body.name || mobile.length !== 10) fail(400, 'bad_mobile');
     if (!validPin(body.pin)) fail(400, 'bad_pin');
-    db.users.push({ id: newId(), name: String(body.name).slice(0, 100), mobile, role: 'partner', perms: [], active: 'yes', pinHash: hashPin(body.pin) });
+    db.users.push({ id: newId(), name: String(body.name).slice(0, 100), mobile, role: 'partner', perms: [], approver: 'yes', active: 'yes', pinHash: hashPin(body.pin) });
     save();
     return send(res, 200, { ok: true });
   }
@@ -320,6 +323,7 @@ async function api(req, res, url) {
     if (parts[2] === 'review') {
       if (!can(user, 'approvals')) fail(403, 'forbidden');
       if (!['approved', 'rejected', 'pending'].includes(body.status)) fail(400, 'bad_status');
+      if (body.status === 'rejected' && !String(body.remark || '').trim()) fail(400, 'reason_required');
       rec.status = body.status;
       rec.remark = String(body.remark || '').slice(0, 2000);
       rec.finalFiles = (body.finalFiles || []).filter(id => db.files.some(f => f.id === id));
@@ -327,13 +331,14 @@ async function api(req, res, url) {
       rec.reviewedBy = body.status === 'pending' ? '' : user.name;
       rec.doneAt = '';
     } else if (parts[2] === 'done') {
-      if (!(user.role === 'contractor' || can(user, 'approvals'))) fail(403, 'forbidden');
+      const flatWing = (find('units', rec.unitId) || {}).wing;
+      if (!((onSite(user) && seesWing(user, flatWing)) || can(user, 'approvals'))) fail(403, 'forbidden');
       if (!['approved', 'done'].includes(rec.status)) fail(400, 'bad_status');
       rec.status = body.done === false ? 'approved' : 'done';
       rec.doneAt = rec.status === 'done' ? localToday() : '';
     } else fail(404, 'not_found');
     save();
-    const out = user.role === 'contractor' ? (({ customerName, phone, ...c }) => c)(rec) : rec;
+    const out = onSite(user) && !can(user, 'approvals') && !can(user, 'flats') ? (({ customerName, phone, ...c }) => c)(rec) : rec;
     return send(res, 200, out);
   }
 

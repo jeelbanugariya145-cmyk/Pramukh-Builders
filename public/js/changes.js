@@ -130,6 +130,7 @@ function renderChanges(main) {
 
   main.insertAdjacentHTML('beforeend', `
     <p class="hint">${contractor ? t('chContractorHelp') : t('chOfficeHelp')}</p>
+    ${!contractor && !reviewer ? `<p class="hint"><strong>${t('chNotApprover')}</strong></p>` : ''}
     <div class="tabs">${filters.map(f => `<button class="tab ${f === filter ? 'active' : ''}" data-filter="${f}">
       ${f === 'all' ? t('all') : t('cs_' + f)} <span class="count">${f === 'all' ? all.length : all.filter(c => c.status === f).length}</span></button>`).join('')}
     </div>
@@ -274,4 +275,58 @@ function openChangeDetail(c) {
   const done = $('[data-done]', dlg);
   if (done) done.addEventListener('click', () => { dlg.close(); markDone(c.id, true); });
   dlg.showModal();
+}
+
+// ---------- Site list for contractors and supervisors ----------
+// Every flat in their wings: which ones have an approved change to build, which are done, which have none
+function renderSiteList(main) {
+  const wings = myWings();
+  const units = Store.list('units').filter(u => wings.includes(u.wing))
+    .sort((a, b) => (a.wing || '').localeCompare(b.wing || '') || String(a.number).localeCompare(String(b.number), 'en', { numeric: true }));
+  const changesOf = u => Store.list('changeRequests').filter(c => c.unitId === u.id && (c.status === 'approved' || c.status === 'done'))
+    .sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+  const kindOf = u => {
+    const cs = changesOf(u);
+    if (cs.some(c => c.status === 'approved')) return 'todo';
+    return cs.length ? 'done' : 'none';
+  };
+  const groups = ['todo', 'done', 'none', 'all'];
+  const filter = groups.includes(state.filter.site) ? state.filter.site : 'todo';
+  const count = k => (k === 'all' ? units.length : units.filter(u => kindOf(u) === k).length);
+  const shown = units.filter(u => filter === 'all' || kindOf(u) === filter);
+  const canMark = onSite() || can('approvals');
+
+  main.insertAdjacentHTML('beforeend', `
+    <p class="hint">${t('siteHelp')}</p>
+    <div class="tabs">${groups.map(k => `<button class="tab ${k === filter ? 'active' : ''}" data-site="${k}">${t('site_' + k)} <span class="count">${count(k)}</span></button>`).join('')}</div>
+    <div class="site-list">
+      ${shown.length ? shown.map(u => {
+        const kind = kindOf(u);
+        const cs = changesOf(u);
+        return `
+        <article class="site-flat site-${kind}">
+          <div class="between">
+            <div><strong class="site-no">${esc(Calc.unitCode(u))}</strong> <span class="hint">${u.bhk ? esc(u.bhk) + ' BHK · ' : ''}${t('floor')} ${esc(u.floor)}</span></div>
+            <span class="cpill ${kind === 'todo' ? 'p-fixed' : kind === 'done' ? 'p-working' : 'p-none'}">${t('siteKind_' + kind)}</span>
+          </div>
+          ${kind === 'none' ? `<p class="hint">${t('siteStandard')}</p>` : cs.map(c => `
+            <div class="site-change ${c.status}">
+              <p>${esc(c.description)}</p>
+              ${c.remark ? `<p class="hint"><strong>${t('remark')}:</strong> ${esc(c.remark)}</p>` : ''}
+              ${thumbs(c.finalFiles, (c.finalFiles || []).length ? t('finalPlan') : '')}
+              ${thumbs(c.files, (c.files || []).length ? t('customerPlan') : '')}
+              <div class="between">
+                <span class="hint">${t('reviewedOn')}: ${fmtDate(c.reviewedAt)}${c.doneAt ? ` · ${t('doneOn')}: ${fmtDate(c.doneAt)}` : ''}</span>
+                ${canMark ? (c.status === 'approved'
+                  ? `<button class="btn btn-small btn-primary" data-site-done="${c.id}">✓ ${t('markDone')}</button>`
+                  : `<button class="btn btn-small" data-site-undo="${c.id}">${t('markNotDone')}</button>`) : ''}
+              </div>
+            </div>`).join('')}
+        </article>`;
+      }).join('') : `<div class="card"><p class="hint">${t('noData')}</p></div>`}
+    </div>`);
+
+  main.querySelectorAll('[data-site]').forEach(b => b.addEventListener('click', () => { state.filter.site = b.dataset.site; render(); }));
+  main.querySelectorAll('[data-site-done]').forEach(b => b.addEventListener('click', () => markDone(b.dataset.siteDone, true)));
+  main.querySelectorAll('[data-site-undo]').forEach(b => b.addEventListener('click', () => markDone(b.dataset.siteUndo, false)));
 }

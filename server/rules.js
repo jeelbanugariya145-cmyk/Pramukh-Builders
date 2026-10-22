@@ -12,7 +12,20 @@ export const PERMS = ['daily', 'dailyView', 'complaints', 'flats', 'approvals', 
 export const WINGS = ['A', 'B'];
 
 const isPartner = u => u.role === 'partner';
+
+// Plan changes are approved only by the people ticked as approvers (partners or staff).
+// Until anyone is ticked, partners can approve so requests never get stuck.
+const isApprover = x => x.active !== 'no' && x.role !== 'contractor' && (x.approver === 'yes' || (x.perms || []).includes('approvals'));
+export function canApprove(u) {
+  const approvers = db.users.filter(isApprover);
+  return approvers.length ? approvers.some(x => x.id === u.id) : isPartner(u);
+}
+
+// Supervisors (staff with a wing) and contractors see the site list of flats to change in their wings
+export const onSite = u => u.role === 'contractor' || (u.role === 'staff' && (u.wings || []).length > 0);
+
 export function can(u, perm) {
+  if (perm === 'approvals') return u.role !== 'customer' && canApprove(u);
   if (perm === 'materials' && !MATERIALS) return false;
   // Contractors always see and answer complaints for their wing
   if (u.role === 'contractor' && perm === 'complaints') return true;
@@ -29,7 +42,7 @@ export const FIELDS = {
   bills: ['projectId', 'date', 'billNo', 'supplier', 'itemsText', 'gst', 'amount', 'photo', 'status', 'paidDate', 'paidMode', 'paidRef', 'notes'],
   expenses: ['projectId', 'date', 'category', 'amount', 'notes'],
   visitors: ['date', 'name', 'phone', 'interest', 'source', 'budget', 'attendedBy', 'status', 'followUp', 'notes'],
-  users: ['name', 'mobile', 'role', 'perms', 'wings', 'active']
+  users: ['name', 'mobile', 'role', 'perms', 'wings', 'approver', 'active']
 };
 
 // Who may create / edit / delete in each collection
@@ -86,14 +99,14 @@ export function readableData(u) {
 
   out.projects = db.projects;
   out.units = db.units;
-  if (u.role === 'contractor') {
-    // Contractors see approved changes in their wing only, without customer names or phone numbers
+  if (u.role !== 'contractor' && (can(u, 'flats') || can(u, 'approvals'))) {
+    out.bookings = db.bookings.map(publicBooking);
+    out.changeRequests = db.changeRequests;
+  } else if (onSite(u)) {
+    // Contractors and supervisors see approved changes in their wings only, without customer names or phone numbers
     out.changeRequests = db.changeRequests
       .filter(c => (c.status === 'approved' || c.status === 'done') && seesWing(u, unitWing(c.unitId)))
       .map(({ customerName, phone, ...c }) => c);
-  } else if (can(u, 'flats') || can(u, 'approvals')) {
-    out.bookings = db.bookings.map(publicBooking);
-    out.changeRequests = db.changeRequests;
   }
   if (can(u, 'daily') || can(u, 'dailyView')) {
     out.dailyReports = db.dailyReports.filter(r => r.userId === u.id || seesWing(u, r.wing || 'both'));

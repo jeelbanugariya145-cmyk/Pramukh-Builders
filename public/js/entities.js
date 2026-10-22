@@ -171,7 +171,7 @@ const ENTITIES = {
       {
         name: 'perms', label: 'permissions', type: 'checks', help: 'permsHelp',
         // Contractors cannot handle flat owners or approve plan changes
-        options: () => ['daily', 'dailyView', 'complaints', 'flats', 'approvals', 'visitors', Store.materials && 'materials']
+        options: () => ['daily', 'dailyView', 'complaints', 'flats', 'visitors', Store.materials && 'materials']
           .filter(Boolean).map(k => ({ value: k, label: t('perm_' + k) })),
         showIf: v => v.role === 'staff' || v.role === 'contractor'
       },
@@ -179,6 +179,11 @@ const ENTITIES = {
         name: 'wings', label: 'wings', type: 'checks', help: 'wingsHelp',
         options: () => [{ value: 'A', label: t('wing') + ' A (4 BHK)' }, { value: 'B', label: t('wing') + ' B (3 BHK)' }],
         showIf: v => v.role === 'staff' || v.role === 'contractor'
+      },
+      {
+        name: 'approver', label: 'approver', type: 'select', help: 'approverHelp', default: 'no',
+        options: () => [{ value: 'no', label: t('no') }, { value: 'yes', label: t('yes') }],
+        showIf: v => v.role === 'partner' || v.role === 'staff'
       },
       { name: 'pin', label: 'loginPin', type: 'pin', help: 'pinHelpUser', requiredOnCreate: true },
       { name: 'active', label: 'active', type: 'select', options: () => [{ value: 'yes', label: t('yes') }, { value: 'no', label: t('no') }], default: 'yes' }
@@ -188,8 +193,9 @@ const ENTITIES = {
       { label: 'loginMobile', value: r => esc(r.mobile) },
       { label: 'role', value: r => badge('role-' + r.role, t('role_' + r.role)) },
       { label: 'wings', value: r => r.role === 'partner' ? t('wingsAll') : (r.wings || []).map(w => t('wing') + ' ' + w).join(', ') },
+      { label: 'approver', value: r => r.approver === 'yes' || (r.perms || []).includes('approvals') ? badge('available', '✓ ' + t('approverShort')) : '' },
       { label: 'permissions', value: r => r.role === 'partner' ? t('perm_all')
-        : [r.role === 'contractor' && t('perm_approvedChanges'), ...(r.perms || []).filter(p => !(r.role === 'contractor' && (p === 'flats' || p === 'approvals'))).map(p => t('perm_' + p))].filter(Boolean).join(', ') },
+        : [r.role === 'contractor' && t('perm_approvedChanges'), ...(r.perms || []).filter(p => p !== 'approvals' && !(r.role === 'contractor' && p === 'flats')).map(p => t('perm_' + p))].filter(Boolean).join(', ') },
       { label: 'active', value: r => r.active === 'no' ? badge('sold', t('no')) : badge('available', t('yes')) }
     ]
   }
