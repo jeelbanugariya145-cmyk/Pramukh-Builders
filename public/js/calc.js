@@ -44,9 +44,6 @@ const Calc = {
   unitBooking(u) {
     return Store.list('bookings').find(b => b.unitId === u.id);
   },
-  unitStatus(u) {
-    return this.unitBooking(u) ? 'booked' : 'available';
-  },
 
   // Latest plan change request for a flat (approved/done ones count first)
   unitChange(u) {
@@ -67,8 +64,6 @@ const Calc = {
   projectSummary(pid) {
     const inProject = x => !pid || x.projectId === pid;
     const units = Store.list('units').filter(inProject);
-    const unitIds = new Set(units.map(u => u.id));
-    const bookings = Store.list('bookings').filter(b => unitIds.has(b.unitId));
     const bills = Store.list('bills').filter(inProject);
     const expenses = Store.list('expenses').filter(inProject);
 
@@ -76,8 +71,6 @@ const Calc = {
     const other = sum(expenses, e => e.amount);
     return {
       units: units.length,
-      booked: bookings.length,
-      available: units.length - bookings.length,
       material,
       other,
       expense: material + other,

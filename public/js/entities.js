@@ -25,7 +25,7 @@ const ENTITIES = {
       { label: 'location', value: r => esc(r.location) },
       { label: 'startDate', value: r => fmtDate(r.startDate) },
       { label: 'status', value: r => badge(r.status, t('st_' + r.status)) },
-      { label: 'units', value: r => { const s = Calc.projectSummary(r.id); return `${s.booked} / ${s.units}`; }, num: true }
+      { label: 'units', value: r => Calc.projectSummary(r.id).units, num: true }
     ]
   },
 
@@ -49,7 +49,6 @@ const ENTITIES = {
       { label: 'floor', value: r => esc(r.floor) },
       { label: 'area', value: r => esc(r.area), num: true },
       { label: 'price', value: r => { const p = Calc.unitPrice(r); return p ? money(p) : '—'; }, num: true },
-      { label: 'status', value: r => { const s = Calc.unitStatus(r); return badge(s, t('us_' + s)); } },
       { label: 'ent_changes', value: r => { const c = Calc.unitChange(r); return c ? badge('ch-' + c.status, t('cs_' + c.status)) : ''; } }
     ],
     // Flats with an approved plan change stand out in the list

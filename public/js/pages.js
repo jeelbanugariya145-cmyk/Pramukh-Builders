@@ -48,7 +48,6 @@ function renderDashboard(main) {
     can('complaints') && stat('d_openComplaints', Store.list('complaints').filter(c => c.status === 'open' || c.status === 'working').length, '', 'complaints'),
     can('complaints') && !isContractor() && stat('d_toCheck', Store.list('complaints').filter(c => c.status === 'fixed').length, Store.list('complaints').some(c => c.status === 'fixed') ? 'warn' : '', 'complaints:fixed'),
     seesDaily() && stat('d_todayReports', Store.list('dailyReports').filter(r => r.date === today()).length, '', 'daily'),
-    stat('d_units', `${s.booked} / ${s.units}`, '', 'flats:chart'),
     Store.has('changeRequests') && stat('d_pendingChanges', pendingChanges, pendingChanges ? 'warn' : '', 'changes'),
     can('visitors') && stat('d_todayVisitors', todayVisitors, '', 'visitors:visitors'),
     can('materials') && stat('d_monthBills', money(sum(month, b => b.amount)), '', 'materials:monthly'),
@@ -101,7 +100,7 @@ function renderDashboard(main) {
       <h2 class="section-title"><span>${t('d_projectWise')}</span></h2>
       <div class="table-wrap"><table class="table">
         <thead><tr>
-          <th>${t('project')}</th><th class="num">${t('booked')}</th><th class="num">${t('available')}</th>
+          <th>${t('project')}</th>
           <th class="num">${t('ent_bills')}</th><th class="num">${t('ent_expenses')}</th><th class="num">${t('d_expense')}</th>
         </tr></thead>
         <tbody>${projects.map(p => {
@@ -109,7 +108,6 @@ function renderDashboard(main) {
           const cell = (label, v) => `<td class="num" data-label="${esc(t(label))}">${v}</td>`;
           return `<tr>
             <td data-label="${esc(t('project'))}"><strong>${esc(p.name)}</strong></td>
-            ${cell('booked', ps.booked)}${cell('available', ps.available)}
             ${cell('ent_bills', money(ps.material))}${cell('ent_expenses', money(ps.other))}
             ${cell('d_expense', money(ps.expense))}
           </tr>`;
@@ -127,27 +125,19 @@ function renderDashboard(main) {
 }
 
 // ---------- Flat chart ----------
-// Two views: who has booked (office) and approved plan changes (everyone, the only view for contractors)
+// Shows each flat's plan change status
 function renderChart(container) {
   const projects = Store.list('projects').filter(p => Store.list('units').some(u => u.projectId === p.id));
   if (!projects.length) {
     container.innerHTML = `<div class="card"><p>${t('ch_noUnits')}</p></div>`;
     return;
   }
-  const salesView = Store.has('bookings');
-  const mode = salesView && state.chartMode !== 'changes' ? 'sales' : 'changes';
   const pid = projects.some(p => p.id === state.chartProject) ? state.chartProject : projects[0].id;
   const units = Store.list('units').filter(u => u.projectId === pid);
   const wings = [...new Set(units.map(u => u.wing || ''))].sort();
   const floorNum = u => Number(u.floor) || 0;
 
   const cellInfo = u => {
-    if (mode === 'sales') {
-      const b = Calc.unitBooking(u);
-      const c = Calc.unitChange(u);
-      const changed = c && (c.status === 'approved' || c.status === 'done');
-      return { cls: 'flat-' + (b ? 'booked' : 'available') + (changed ? ' flat-marked' : ''), sub: b ? b.customerName : (u.bhk ? u.bhk + ' BHK' : '') };
-    }
     const c = Calc.unitChange(u);
     const status = c ? c.status : 'none';
     return { cls: 'flat-ch-' + status, sub: c ? t('cs_' + c.status) : (u.bhk ? u.bhk + ' BHK' : '') };
@@ -155,7 +145,6 @@ function renderChart(container) {
 
   const counts = {};
   units.forEach(u => { const c = Calc.unitChange(u); const k = c ? c.status : 'none'; counts[k] = (counts[k] || 0) + 1; });
-  const booked = units.filter(u => Calc.unitBooking(u)).length;
 
   const wingHtml = wing => {
     const wu = units.filter(u => (u.wing || '') === wing);
@@ -185,11 +174,7 @@ function renderChart(container) {
       </div>`;
   };
 
-  const legend = mode === 'sales'
-    ? `<span class="legend"><i class="dot dot-available"></i>${t('available')} ${units.length - booked}</span>
-       <span class="legend"><i class="dot dot-booked"></i>${t('booked')} ${booked}</span>
-       <span class="legend"><i class="dot dot-marked"></i>${t('ch_marked')}</span>`
-    : ['approved', 'done', ...(Store.list('changeRequests').some(c => c.status === 'pending') ? ['pending'] : []), 'none']
+  const legend = ['approved', 'done', ...(Store.list('changeRequests').some(c => c.status === 'pending') ? ['pending'] : []), 'none']
       .map(k => `<span class="legend"><i class="dot dot-ch-${k}"></i>${k === 'none' ? t('ch_none') : t('cs_' + k)} ${counts[k] || 0}</span>`).join('');
 
   container.innerHTML = `
@@ -199,34 +184,16 @@ function renderChart(container) {
           ${projects.map(p => `<option value="${p.id}" ${p.id === pid ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}
         </select>
       </label>` : ''}
-      ${salesView ? `<div class="seg seg-switch" role="group">
-        <button class="${mode === 'sales' ? 'on' : ''}" data-mode="sales">${t('ch_salesView')}</button>
-        <button class="${mode === 'changes' ? 'on' : ''}" data-mode="changes">${t('ch_changeView')}</button>
-      </div>` : ''}
     </div>
     <div class="toolbar legends">${legend}</div>
-    <p class="hint">${mode === 'sales' ? t('ch_help') : t('ch_helpChanges')}</p>
+    <p class="hint">${t('ch_helpChanges')}</p>
     <div class="wings">${wings.map(wingHtml).join('')}</div>`;
 
   const sel = $('#chart-project', container);
   if (sel) sel.addEventListener('change', e => { state.chartProject = e.target.value; render(); });
-  container.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { state.chartMode = b.dataset.mode; render(); }));
   container.querySelectorAll('[data-unit]').forEach(btn => btn.addEventListener('click', () => {
-    const u = Store.get('units', btn.dataset.unit);
-    const c = Calc.unitChange(u);
-    if (mode === 'changes') {
-      if (c) openChangeDetail(c);
-      return;
-    }
-    const b = Calc.unitBooking(u);
-    if (!b) {
-      if (can('flats')) openForm('bookings', null, { unitId: u.id });
-      return;
-    }
-    state.page = 'flats';
-    state.tab.flats = 'bookings';
-    state.search.bookings = b.customerName;
-    render();
+    const c = Calc.unitChange(Store.get('units', btn.dataset.unit));
+    if (c) openChangeDetail(c);
   }));
 }
 
