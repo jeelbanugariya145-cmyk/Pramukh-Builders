@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { db, save, flush, newId, find, replaceAll, writeFile, readFile, storageMode, FILE_TYPES, COLLECTIONS } from './db.js';
 import { login, logout, currentUser, parseCookies, hashPin, validPin, normMobile } from './auth.js';
-import { PERMS, MATERIALS, FIELDS, REFS, can, canWrite, readableData, canReadFile, customerBookings } from './rules.js';
+import { PERMS, WINGS, MATERIALS, FIELDS, REFS, can, canWrite, readableData, canReadFile, customerBookings, seesWing, canSeeComplaint } from './rules.js';
 import { aiEnabled, readBill, readStatement, aiErrorCode } from './ai.js';
 import { setupPramukhView, loadDemo } from './demo.js';
 
@@ -50,13 +50,14 @@ function readBody(req) {
 }
 
 // Keeps only allowed fields and turns number-like inputs into numbers
-const NUMERIC = new Set(['price3', 'price4', 'area', 'parking', 'price', 'gst', 'amount', 'wage', 'contractAmount', 'budget']);
+const NUMERIC = new Set(['price3', 'price4', 'area', 'parking', 'price', 'gst', 'amount', 'budget']);
 function clean(coll, input) {
   const out = {};
   for (const f of FIELDS[coll]) {
     if (!(f in input)) continue;
     let v = input[f];
     if (f === 'perms') v = Array.isArray(v) ? v.filter(p => PERMS.includes(p)) : [];
+    else if (f === 'wings') v = Array.isArray(v) ? v.filter(w => WINGS.includes(w)) : [];
     else if (NUMERIC.has(f)) v = v === '' || v === null ? '' : Number(v) || 0;
     else v = String(v ?? '').slice(0, 5000);
     out[f] = v;
@@ -183,21 +184,6 @@ async function api(req, res, url) {
     }
   }
 
-  // Attendance for one day, all workers at once
-  if (route === 'POST /attendance/day') {
-    if (!can(user, 'labour')) fail(403, 'forbidden');
-    const body = await readBody(req);
-    const ids = new Set((body.entries || []).map(e => e.workerId));
-    db.attendance = db.attendance.filter(a => !(a.date === body.date && ids.has(a.workerId)));
-    (body.entries || []).forEach(e => {
-      if (find('workers', e.workerId) && ['present', 'half', 'absent'].includes(e.status)) {
-        db.attendance.push({ id: newId(), workerId: e.workerId, date: String(body.date), status: e.status });
-      }
-    });
-    save();
-    return send(res, 200, { attendance: db.attendance });
-  }
-
   // Mark many bills paid at once (tick marks, bank statement matches)
   if (route === 'POST /bills/pay') {
     if (!can(user, 'materials')) fail(403, 'forbidden');
@@ -229,8 +215,14 @@ async function api(req, res, url) {
       id: String(p.id || newId()).slice(0, 40), text: String(p.text || '').slice(0, 500),
       status: ['done', 'notdone'].includes(p.status) ? p.status : '', checkedOn: String(p.checkedOn || '').slice(0, 10)
     })).filter(p => p.text.trim());
+    // A report covers one wing, or both; people only report on wings they are assigned to
+    const myWings = user.role === 'partner' ? WINGS : user.wings;
+    let wing = String(body.wing || '');
+    if (!(WINGS.includes(wing) && myWings.includes(wing)) && !(wing === 'both' && myWings.length > 1)) {
+      wing = myWings.length === 1 ? myWings[0] : 'both';
+    }
     const rec = {
-      id, date, userId: user.id, userName: user.name,
+      id, date, wing, userId: user.id, userName: user.name,
       workDone: String(body.workDone || '').slice(0, 5000),
       workers: body.workers === '' || body.workers == null ? '' : Number(body.workers) || 0,
       photos, plan, updatedAt: new Date().toISOString()
@@ -251,6 +243,55 @@ async function api(req, res, url) {
     item.checkedOn = item.status ? localToday() : '';
     save();
     return send(res, 200, rep);
+  }
+
+  // ---------- Complaints to contractors and supervisors ----------
+  const ownPhotos = ids => (Array.isArray(ids) ? ids : []).filter(fid => db.files.some(f => f.id === fid && f.by === user.id)).slice(0, 20);
+  const stamp = () => new Date().toISOString();
+
+  if (route === 'POST /complaints') {
+    // Partners and ticked staff raise complaints; contractors only answer them
+    if (!can(user, 'complaints') || user.role === 'contractor') fail(403, 'forbidden');
+    const body = await readBody(req);
+    const wing = ['A', 'B', 'both'].includes(body.wing) ? body.wing : '';
+    if (!wing || !seesWing(user, wing)) fail(400, 'bad_wing');
+    const title = String(body.title || '').trim().slice(0, 200);
+    if (!title) fail(400, 'empty_complaint');
+    const rec = {
+      id: newId(), wing, title, location: String(body.location || '').slice(0, 200),
+      description: String(body.description || '').slice(0, 5000), urgent: !!body.urgent,
+      photos: ownPhotos(body.photos), status: 'open',
+      createdBy: user.id, createdByName: user.name, createdByRole: user.role,
+      createdAt: stamp(), updatedAt: stamp(), replies: []
+    };
+    db.complaints.push(rec);
+    save();
+    return send(res, 200, rec);
+  }
+
+  if (method === 'POST' && parts[0] === 'complaints' && parts[2] === 'reply') {
+    const c = find('complaints', parts[1]);
+    if (!c || !canSeeComplaint(user, c)) fail(404, 'not_found');
+    const body = await readBody(req);
+    const text = String(body.text || '').trim().slice(0, 5000);
+    const photos = ownPhotos(body.photos);
+    // Contractors and supervisors report progress; partners and whoever raised it close or reopen
+    const canClose = user.role === 'partner' || c.createdBy === user.id;
+    const allowed = canClose ? ['open', 'working', 'fixed', 'closed'] : ['working', 'fixed'];
+    const status = allowed.includes(body.status) ? body.status : '';
+    if (!text && !photos.length && !status) fail(400, 'empty_reply');
+    c.replies.push({ id: newId(), userId: user.id, name: user.name, role: user.role, text, photos, status, at: stamp() });
+    if (status) c.status = status;
+    c.updatedAt = stamp();
+    save();
+    return send(res, 200, c);
+  }
+
+  if (method === 'DELETE' && parts[0] === 'complaints' && parts[1]) {
+    if (user.role !== 'partner') fail(403, 'forbidden');
+    db.complaints = db.complaints.filter(c => c.id !== parts[1]);
+    save();
+    return send(res, 200, { ok: true });
   }
 
   // ---------- Plan change requests ----------

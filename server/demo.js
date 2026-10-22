@@ -101,20 +101,30 @@ export function loadDemo() {
     [30, 'electricity', 45000, 'લાઇટ બિલ']
   ].map(([ago, category, amount, notes]) => ({ id: newId(), projectId: p.id, date: daysAgo(ago), category, amount, notes }));
 
-  d.workers = [
-    { name: 'ડેમો કડિયા', kind: 'daily', workType: 'કડિયા / Mason', wage: 900 },
-    { name: 'ડેમો મજૂર', kind: 'daily', workType: 'મજૂર / Helper', wage: 600 },
-    { name: 'ડેમો પ્લમ્બિંગ કોન્ટ્રાક્ટર', kind: 'contractor', workType: 'પ્લમ્બિંગ / Plumbing', contractAmount: 1800000 }
-  ].map(x => Object.assign({ id: newId(), phone: '', projectId: p.id, wage: '', contractAmount: '' }, x));
-  d.attendance = [];
-  for (let ago = 1; ago <= 14; ago++) {
-    d.workers.filter(w => w.kind === 'daily').forEach((w, i) => {
-      const status = (ago + i) % 7 === 0 ? 'absent' : (ago + i) % 5 === 0 ? 'half' : 'present';
-      d.attendance.push({ id: newId(), workerId: w.id, date: daysAgo(ago), status });
-    });
-  }
-  d.labourPayments = [[0, 7, 5000], [1, 7, 3500], [2, 30, 600000]].map(([i, ago, amount]) =>
-    ({ id: newId(), workerId: d.workers[i].id, date: daysAgo(ago), amount, mode: 'cash', notes: '' }));
+  const at = (ago, hour) => daysAgo(ago) + `T${String(hour).padStart(2, '0')}:00:00.000Z`;
+  const reply = (ago, hour, name, role, text, status) => ({ id: newId(), userId: 'demo', name, role, text, photos: [], status, at: at(ago, hour) });
+  d.complaints = [
+    {
+      id: newId(), wing: 'A', title: 'ઉદાહરણ: 7મા માળે સ્લેબમાં લીકેજ', location: 'વિંગ A, 7મો માળ, 702 બાથરૂમ ઉપર',
+      description: 'વરસાદ પછી છતમાંથી પાણી ટપકે છે. વોટરપ્રૂફિંગ ફરીથી કરવું.', urgent: true, photos: [], status: 'working',
+      createdBy: 'demo', createdByName: 'ભાગીદાર', createdByRole: 'partner', createdAt: at(3, 5), updatedAt: at(1, 9),
+      replies: [
+        reply(2, 6, 'ડેમો કોન્ટ્રાક્ટર A', 'contractor', 'કાલે સવારે વોટરપ્રૂફિંગની ટીમ મોકલું છું.', 'working'),
+        reply(1, 9, 'ડેમો સુપરવાઇઝર A', 'staff', 'ટીમ આવી ગઈ છે, જૂનું કોટિંગ કાઢવાનું ચાલુ છે.', '')
+      ]
+    },
+    {
+      id: newId(), wing: 'B', title: 'ઉદાહરણ: સળિયાનું કવર ઓછું', location: 'વિંગ B, 5મા માળનો કોલમ C4',
+      description: 'સળિયાનું કવર ઓછું છે, ભરતાં પહેલાં સુધારવું.', urgent: false, photos: [], status: 'fixed',
+      createdBy: 'demo', createdByName: 'ભાગીદાર', createdByRole: 'partner', createdAt: at(4, 6), updatedAt: at(3, 10),
+      replies: [reply(3, 10, 'ડેમો કોન્ટ્રાક્ટર B', 'contractor', 'કવર બ્લોક મૂકીને સુધારી દીધું. ફોટો જોઈ લેશો.', 'fixed')]
+    },
+    {
+      id: newId(), wing: 'both', title: 'ઉદાહરણ: સાઇટ પર હેલ્મેટ વગર કામ', location: 'બંને વિંગ',
+      description: 'બધા કારીગરો હેલ્મેટ અને સેફ્ટી બેલ્ટ પહેરે તે જોવું.', urgent: false, photos: [], status: 'open',
+      createdBy: 'demo', createdByName: 'ભાગીદાર', createdByRole: 'partner', createdAt: at(0, 4), updatedAt: at(0, 4), replies: []
+    }
+  ];
 
   d.visitors = [
     [0, 'ડેમો મુલાકાતી 1', '9811111111', '4', 'reference', 'interested', 2],
@@ -127,7 +137,7 @@ export function loadDemo() {
   }));
 
   const report = (ago, workDone, workers, plan) => ({
-    id: `${daysAgo(ago)}_demo`, date: daysAgo(ago), userId: 'demo', userName: 'ડેમો સુપરવાઇઝર',
+    id: `${daysAgo(ago)}_demo`, date: daysAgo(ago), wing: 'A', userId: 'demo', userName: 'ડેમો સુપરવાઇઝર',
     workDone, workers, photos: [], updatedAt: daysAgo(ago) + 'T18:00:00.000Z',
     plan: plan.map(([text, status], i) => ({ id: `d${ago}-${i}`, text, status, checkedOn: status ? daysAgo(ago - 1) : '' }))
   });

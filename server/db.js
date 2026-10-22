@@ -11,8 +11,8 @@ const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
 export const COLLECTIONS = [
-  'users', 'projects', 'units', 'bookings', 'changeRequests', 'dailyReports',
-  'bills', 'expenses', 'workers', 'attendance', 'labourPayments', 'visitors', 'files'
+  'users', 'projects', 'units', 'bookings', 'changeRequests', 'dailyReports', 'complaints',
+  'bills', 'expenses', 'visitors', 'files'
 ];
 
 function empty() {

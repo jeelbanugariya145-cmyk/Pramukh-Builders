@@ -18,8 +18,6 @@ function fmtMonth(ym) {
   return new Date(y, m - 1, 1).toLocaleDateString(LANG === 'gu' ? 'gu-IN' : 'en-IN', { month: 'long', year: 'numeric' });
 }
 
-const ATT_VALUE = { present: 1, half: 0.5, absent: 0 };
-
 const Calc = {
   projectName(id) {
     const p = Store.get('projects', id);
@@ -66,21 +64,6 @@ const Calc = {
     return [...new Set(Store.list('bills').map(b => (b.supplier || '').trim()).filter(Boolean))].sort();
   },
 
-  // Labour
-  workerDays(w) {
-    return sum(Store.list('attendance').filter(a => a.workerId === w.id), a => ATT_VALUE[a.status]);
-  },
-  workerEarned(w) {
-    if (w.kind === 'contractor') return Number(w.contractAmount) || 0;
-    return this.workerDays(w) * (Number(w.wage) || 0);
-  },
-  workerPaid(w) {
-    return sum(Store.list('labourPayments').filter(p => p.workerId === w.id), p => p.amount);
-  },
-  workerDue(w) {
-    return this.workerEarned(w) - this.workerPaid(w);
-  },
-
   projectSummary(pid) {
     const inProject = x => !pid || x.projectId === pid;
     const units = Store.list('units').filter(inProject);
@@ -88,21 +71,17 @@ const Calc = {
     const bookings = Store.list('bookings').filter(b => unitIds.has(b.unitId));
     const bills = Store.list('bills').filter(inProject);
     const expenses = Store.list('expenses').filter(inProject);
-    const workers = Store.list('workers').filter(inProject);
 
     const material = sum(bills, b => b.amount);
-    const labour = sum(workers, w => this.workerEarned(w));
     const other = sum(expenses, e => e.amount);
     return {
       units: units.length,
       booked: bookings.length,
       available: units.length - bookings.length,
       material,
-      labour,
       other,
-      expense: material + labour + other,
-      supplierDue: sum(bills.filter(b => !this.billPaid(b)), b => b.amount),
-      labourDue: sum(workers, w => this.workerDue(w))
+      expense: material + other,
+      supplierDue: sum(bills.filter(b => !this.billPaid(b)), b => b.amount)
     };
   }
 };

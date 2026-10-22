@@ -1,4 +1,4 @@
-// Pages: dashboard, flat chart, project info, attendance, settings, printed quotation
+// Pages: dashboard, flat chart, project info, settings, printed quotation
 
 // ---------- Dashboard ----------
 function heroBanner() {
@@ -45,14 +45,15 @@ function renderDashboard(main) {
   const followUps = Store.list('visitors').filter(v => v.followUp && v.followUp <= today() && !['booked', 'notInterested'].includes(v.status));
 
   const cards = [
+    can('complaints') && stat('d_openComplaints', Store.list('complaints').filter(c => c.status === 'open' || c.status === 'working').length, '', 'complaints'),
+    can('complaints') && !isContractor() && stat('d_toCheck', Store.list('complaints').filter(c => c.status === 'fixed').length, Store.list('complaints').some(c => c.status === 'fixed') ? 'warn' : '', 'complaints:fixed'),
     seesDaily() && stat('d_todayReports', Store.list('dailyReports').filter(r => r.date === today()).length, '', 'daily'),
     stat('d_units', `${s.booked} / ${s.units}`, '', 'flats:chart'),
     Store.has('changeRequests') && stat('d_pendingChanges', pendingChanges, pendingChanges ? 'warn' : '', 'changes'),
     can('visitors') && stat('d_todayVisitors', todayVisitors, '', 'visitors:visitors'),
     can('materials') && stat('d_monthBills', money(sum(month, b => b.amount)), '', 'materials:monthly'),
     can('materials') && stat('d_supplierDue', money(s.supplierDue), s.supplierDue ? 'warn' : 'good', 'materials:monthly'),
-    can('labour') && stat('d_labourDue', money(s.labourDue), s.labourDue ? 'warn' : 'good', 'labour:workers'),
-    can('materials') && can('labour') && stat('d_expense', money(s.expense))
+    can('materials') && stat('d_expense', money(s.expense))
   ].filter(Boolean).join('');
 
   // Suppliers still to be paid (all months)
@@ -95,13 +96,13 @@ function renderDashboard(main) {
       </table></div>
     </section>` : ''}
 
-    ${can('materials') && can('labour') ? `
+    ${can('materials') ? `
     <section class="card">
       <h2 class="section-title"><span>${t('d_projectWise')}</span></h2>
       <div class="table-wrap"><table class="table">
         <thead><tr>
           <th>${t('project')}</th><th class="num">${t('booked')}</th><th class="num">${t('available')}</th>
-          <th class="num">${t('ent_bills')}</th><th class="num">${t('ent_workers')}</th><th class="num">${t('ent_expenses')}</th><th class="num">${t('d_expense')}</th>
+          <th class="num">${t('ent_bills')}</th><th class="num">${t('ent_expenses')}</th><th class="num">${t('d_expense')}</th>
         </tr></thead>
         <tbody>${projects.map(p => {
           const ps = Calc.projectSummary(p.id);
@@ -109,7 +110,7 @@ function renderDashboard(main) {
           return `<tr>
             <td data-label="${esc(t('project'))}"><strong>${esc(p.name)}</strong></td>
             ${cell('booked', ps.booked)}${cell('available', ps.available)}
-            ${cell('ent_bills', money(ps.material))}${cell('ent_workers', money(ps.labour))}${cell('ent_expenses', money(ps.other))}
+            ${cell('ent_bills', money(ps.material))}${cell('ent_expenses', money(ps.other))}
             ${cell('d_expense', money(ps.expense))}
           </tr>`;
         }).join('')}</tbody>
@@ -119,7 +120,8 @@ function renderDashboard(main) {
   main.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => {
     const [page, tab] = b.dataset.go.split(':');
     state.page = page;
-    if (tab) state.tab[page] = tab;
+    if (tab && page === 'complaints') state.filter.complaints = tab;
+    else if (tab) state.tab[page] = tab;
     render();
   }));
 }
@@ -307,64 +309,6 @@ function renderInfo(main) {
       <h3>${t('i_past')}</h3>
       <ul class="chips">${BRAND.pastProjects.map(l => `<li>${esc(l)}</li>`).join('')}</ul>
     </section>`;
-}
-
-// ---------- Attendance ----------
-function renderAttendance(container) {
-  const projects = Store.list('projects');
-  const date = state.attDate || today();
-  const pid = state.attProject || '';
-  const workers = Store.list('workers').filter(w => w.kind === 'daily' && (!pid || w.projectId === pid));
-  const statusOf = w => {
-    const a = Store.list('attendance').find(x => x.workerId === w.id && x.date === date);
-    return a ? a.status : 'present';
-  };
-
-  container.innerHTML = `
-    <p class="hint">${t('att_help')}</p>
-    <div class="toolbar">
-      <label class="inline">${t('att_date')} <input type="date" id="att-date" value="${date}"></label>
-      ${projects.length > 1 ? `<label class="inline">${t('att_project')}
-        <select id="att-project">
-          <option value="">${t('att_all')}</option>
-          ${projects.map(p => `<option value="${p.id}" ${p.id === pid ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}
-        </select>
-      </label>` : ''}
-    </div>
-    ${workers.length ? `
-      <div class="att-list">
-        ${workers.map(w => `
-          <div class="att-row">
-            <div><strong>${esc(w.name)}</strong><div class="hint">${esc(w.workType)}</div></div>
-            <div class="seg" role="radiogroup">
-              ${['present', 'half', 'absent'].map(s => `
-                <label class="seg-opt seg-${s}">
-                  <input type="radio" name="att-${w.id}" value="${s}" ${statusOf(w) === s ? 'checked' : ''}>
-                  <span>${t('att_' + s)}</span>
-                </label>`).join('')}
-            </div>
-          </div>`).join('')}
-      </div>
-      <div class="toolbar"><button class="btn btn-primary" id="att-save">${t('att_save')}</button></div>
-    ` : `<div class="card"><p>${t('att_noWorkers')}</p></div>`}`;
-
-  $('#att-date', container).addEventListener('change', e => { state.attDate = e.target.value; render(); });
-  const projSel = $('#att-project', container);
-  if (projSel) projSel.addEventListener('change', e => { state.attProject = e.target.value; render(); });
-  const saveBtn = $('#att-save', container);
-  if (saveBtn) saveBtn.addEventListener('click', async () => {
-    const entries = workers.map(w => {
-      const checked = container.querySelector(`input[name="att-${w.id}"]:checked`);
-      return { workerId: w.id, status: checked ? checked.value : 'present' };
-    });
-    try {
-      const res = await api('POST', '/attendance/day', { date, entries });
-      Store.data.attendance = res.attendance;
-      toast(t('att_saved'));
-    } catch (err) {
-      toast(errText(err), 'err');
-    }
-  });
 }
 
 // ---------- Settings ----------

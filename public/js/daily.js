@@ -59,6 +59,7 @@ function renderMyDaily(el) {
   if (!state.draft || state.draft.id !== id) {
     state.draft = {
       id, workDone: saved ? saved.workDone : '', workers: saved ? saved.workers : '',
+      wing: saved ? saved.wing : (myWings().length === 1 ? myWings()[0] : 'both'),
       photos: saved ? [...saved.photos] : [], plan: saved ? saved.plan.map(p => ({ ...p })) : []
     };
   }
@@ -88,6 +89,9 @@ function renderMyDaily(el) {
 
     <section class="card">
       <h2>${isToday ? t('dr_todayWork') : t('dr_dayWork').replace('{d}', fmtDate(date))}</h2>
+      ${myWings().length > 1 ? `<div class="seg seg-switch" role="radiogroup" aria-label="${t('wing')}">${[...myWings(), 'both'].map(w => `
+        <label class="seg-pick"><input type="radio" name="dr-wing" value="${w}" ${dr.wing === w ? 'checked' : ''}><span>${esc(wingLabel(w))}</span></label>`).join('')}</div>`
+      : `<span class="hint">${esc(wingLabel(dr.wing))}</span>`}
       <textarea id="dr-work" rows="4" placeholder="${esc(t('dr_workPh'))}">${esc(dr.workDone)}</textarea>
       <div class="photos">
         ${dr.photos.map(pid => `<div class="photo"><a href="${fileUrl(pid)}" target="_blank" rel="noopener"><img src="${fileUrl(pid)}" alt="" loading="lazy"></a>
@@ -124,7 +128,7 @@ function renderMyDaily(el) {
 
   const saveDraft = async () => {
     try {
-      const rec = await api('POST', '/daily/save', { date, workDone: dr.workDone, workers: dr.workers, photos: dr.photos, plan: dr.plan });
+      const rec = await api('POST', '/daily/save', { date, wing: dr.wing, workDone: dr.workDone, workers: dr.workers, photos: dr.photos, plan: dr.plan });
       Store.merge('dailyReports', [rec]);
       const s = $('#dr-saved');
       if (s) s.textContent = `${t('saved')} ${new Date().toLocaleTimeString(LANG === 'gu' ? 'gu-IN' : 'en-IN', { hour: '2-digit', minute: '2-digit' })}`;
@@ -132,6 +136,8 @@ function renderMyDaily(el) {
       toast(errText(err), 'err');
     }
   };
+
+  el.querySelectorAll('input[name=dr-wing]').forEach(r => r.addEventListener('change', () => { dr.wing = r.value; saveDraft(); }));
 
   // Text saves when you leave the box
   $('#dr-work', el).addEventListener('input', e => { dr.workDone = e.target.value; });
@@ -201,16 +207,20 @@ function renderMyDaily(el) {
 // ---------- Partners and viewers: everyone's reports for a day ----------
 function renderAllDaily(el) {
   const date = state.allDay || today();
-  const reports = Store.list('dailyReports').filter(r => r.date === date).sort((a, b) => a.userName.localeCompare(b.userName));
+  const wf = state.dWing || 'all';
+  const reports = Store.list('dailyReports')
+    .filter(r => r.date === date && (wf === 'all' || r.wing === wf || r.wing === 'both'))
+    .sort((a, b) => (a.wing || '').localeCompare(b.wing || '') || a.userName.localeCompare(b.userName));
   const recentDays = [...new Set(Store.list('dailyReports').map(r => r.date))].sort().reverse().slice(0, 14);
 
   el.innerHTML = `
     ${dateBar(date, 'all-day')}
+    ${myWings().length > 1 ? `<div class="chips-row">${['all', 'A', 'B'].map(w => `<button class="chip-btn ${w === wf ? 'on' : ''}" data-dwing="${w}">${w === 'all' ? t('all') : t('wing') + ' ' + w}</button>`).join('')}</div>` : ''}
     ${reports.length ? reports.map(r => {
       const prev = prevReport(r.userId, r.date);
       return `
       <section class="card report">
-        <div class="between"><h2>👷 ${esc(r.userName)}</h2>${r.workers !== '' ? `<span class="hint">${t('dr_workersShort')}: <strong>${r.workers}</strong></span>` : ''}</div>
+        <div class="between"><h2>👷 ${esc(r.userName)} <span class="cpill p-wing">${esc(wingLabel(r.wing || 'both'))}</span></h2>${r.workers !== '' ? `<span class="hint">${t('dr_workersShort')}: <strong>${r.workers}</strong></span>` : ''}</div>
         ${prev ? `
           <div class="report-check">
             <div class="between"><strong>${t('dr_yesterdayPlan')}</strong><span class="num">${planDone(prev)}/${prev.plan.length} ${t('dr_doneShort')}</span></div>
@@ -230,5 +240,6 @@ function renderAllDaily(el) {
     </section>` : ''}`;
 
   bindDateBar(el, 'allDay');
+  el.querySelectorAll('[data-dwing]').forEach(b => b.addEventListener('click', () => { state.dWing = b.dataset.dwing; render(); }));
   el.querySelectorAll('[data-open-day]').forEach(b => b.addEventListener('click', () => { state.allDay = b.dataset.openDay; render(); }));
 }

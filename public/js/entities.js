@@ -136,53 +136,6 @@ const ENTITIES = {
     sort: (a, b) => (b.date || '').localeCompare(a.date || '')
   },
 
-  workers: {
-    canEdit: () => can('labour'),
-    fields: [
-      { name: 'name', label: 'name', required: true },
-      { name: 'phone', label: 'phone', type: 'tel' },
-      { name: 'kind', label: 'kind', type: 'select', options: opts('wk_', ['daily', 'contractor']), default: 'daily' },
-      { name: 'workType', label: 'workType' },
-      { name: 'projectId', label: 'project', type: 'select', options: projectOptions, required: true, default: () => (Store.list('projects')[0] || {}).id },
-      { name: 'wage', label: 'wage', type: 'number', showIf: v => v.kind === 'daily' },
-      { name: 'contractAmount', label: 'contractAmount', type: 'number', showIf: v => v.kind === 'contractor' }
-    ],
-    columns: [
-      { label: 'name', value: r => `<strong>${esc(r.name)}</strong>` },
-      { label: 'kind', value: r => badge(r.kind, t('wk_' + r.kind)) },
-      { label: 'workType', value: r => esc(r.workType) },
-      { label: 'rateOrContract', value: r => r.kind === 'contractor' ? money(r.contractAmount) : money(r.wage) + ' / ' + t('days'), num: true },
-      { label: 'days', value: r => r.kind === 'contractor' ? '—' : Calc.workerDays(r), num: true },
-      { label: 'earned', value: r => money(Calc.workerEarned(r)), num: true },
-      { label: 'paid', value: r => money(Calc.workerPaid(r)), num: true },
-      { label: 'due', value: r => dueCell(Calc.workerDue(r)), num: true }
-    ]
-  },
-
-  labourPayments: {
-    canEdit: () => can('labour'),
-    fields: [
-      {
-        name: 'workerId', label: 'worker', type: 'select', required: true,
-        options: () => Store.list('workers').map(w => ({
-          value: w.id, label: `${w.name} — ${t('due')}: ${money(Calc.workerDue(w))}`
-        }))
-      },
-      { name: 'date', label: 'date', type: 'date', required: true, default: today },
-      { name: 'amount', label: 'amount', type: 'number', required: true },
-      { name: 'mode', label: 'mode', type: 'select', options: opts('pm_', ['cash', 'cheque', 'bank', 'upi']), default: 'cash' },
-      { name: 'notes', label: 'notes', type: 'textarea' }
-    ],
-    columns: [
-      { label: 'date', value: r => fmtDate(r.date) },
-      { label: 'worker', value: r => { const w = Store.get('workers', r.workerId); return w ? `<strong>${esc(w.name)}</strong>` : ''; } },
-      { label: 'amount', value: r => money(r.amount), num: true },
-      { label: 'mode', value: r => t('pm_' + r.mode) },
-      { label: 'notes', value: r => esc(r.notes) }
-    ],
-    sort: (a, b) => (b.date || '').localeCompare(a.date || '')
-  },
-
   visitors: {
     canEdit: () => can('visitors'),
     fields: [
@@ -219,8 +172,13 @@ const ENTITIES = {
       {
         name: 'perms', label: 'permissions', type: 'checks', help: 'permsHelp',
         // Contractors cannot handle flat owners or approve plan changes
-        options: () => ['daily', 'dailyView', 'flats', 'approvals', 'labour', 'visitors', Store.materials && 'materials']
+        options: () => ['daily', 'dailyView', 'complaints', 'flats', 'approvals', 'visitors', Store.materials && 'materials']
           .filter(Boolean).map(k => ({ value: k, label: t('perm_' + k) })),
+        showIf: v => v.role === 'staff' || v.role === 'contractor'
+      },
+      {
+        name: 'wings', label: 'wings', type: 'checks', help: 'wingsHelp',
+        options: () => [{ value: 'A', label: t('wing') + ' A (4 BHK)' }, { value: 'B', label: t('wing') + ' B (3 BHK)' }],
         showIf: v => v.role === 'staff' || v.role === 'contractor'
       },
       { name: 'pin', label: 'loginPin', type: 'pin', help: 'pinHelpUser', requiredOnCreate: true },
@@ -230,6 +188,7 @@ const ENTITIES = {
       { label: 'name', value: r => `<strong>${esc(r.name)}</strong>` },
       { label: 'loginMobile', value: r => esc(r.mobile) },
       { label: 'role', value: r => badge('role-' + r.role, t('role_' + r.role)) },
+      { label: 'wings', value: r => r.role === 'partner' ? t('wingsAll') : (r.wings || []).map(w => t('wing') + ' ' + w).join(', ') },
       { label: 'permissions', value: r => r.role === 'partner' ? t('perm_all')
         : [r.role === 'contractor' && t('perm_approvedChanges'), ...(r.perms || []).filter(p => !(r.role === 'contractor' && (p === 'flats' || p === 'approvals'))).map(p => t('perm_' + p))].filter(Boolean).join(', ') },
       { label: 'active', value: r => r.active === 'no' ? badge('sold', t('no')) : badge('available', t('yes')) }

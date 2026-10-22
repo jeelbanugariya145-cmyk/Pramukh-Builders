@@ -65,7 +65,7 @@ export function currentUser(token) {
   if (!s) return null;
   if (s.kind === 'user') {
     const u = db.users.find(x => x.id === s.userId && x.active !== 'no');
-    return u ? { id: u.id, name: u.name, mobile: u.mobile, role: u.role, perms: u.perms || [] } : null;
+    return u ? { id: u.id, name: u.name, mobile: u.mobile, role: u.role, perms: u.perms || [], wings: u.wings || [] } : null;
   }
   const owned = db.bookings.filter(b => normMobile(b.phone) === s.mobile && b.pinHash);
   if (!owned.length) return null;

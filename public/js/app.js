@@ -19,6 +19,8 @@ const isCustomer = () => Store.me && Store.me.role === 'customer';
 function can(perm) {
   if (perm === 'materials' && !Store.materials) return false;
   if (isContractor() && (perm === 'flats' || perm === 'approvals')) return false;
+  // Contractors always see and answer complaints for their wing
+  if (isContractor() && perm === 'complaints') return true;
   return isPartner() || (Store.me && ['staff', 'contractor'].includes(Store.me.role) && Store.me.perms.includes(perm));
 }
 const seesDaily = () => can('daily') || can('dailyView');
@@ -28,10 +30,10 @@ function pagesFor() {
   if (isCustomer()) return [{ id: 'myflat', icon: '🏠' }];
   if (isContractor()) {
     return [
+      { id: 'complaints', icon: '📢' },
       { id: 'changes', icon: '📐' },
       seesDaily() && { id: 'daily', icon: '📋' },
       { id: 'flats', icon: '🏢', tabs: ['chart'] },
-      can('labour') && { id: 'labour', icon: '👷', tabs: ['workers', 'attendance', 'labourPayments'] },
       { id: 'info', icon: '🏙️' },
       { id: 'settings', icon: '⚙️' }
     ].filter(Boolean);
@@ -39,11 +41,11 @@ function pagesFor() {
   const pages = [
     { id: 'dashboard', icon: '📊' },
     seesDaily() && { id: 'daily', icon: '📋' },
+    can('complaints') && { id: 'complaints', icon: '📢' },
     { id: 'info', icon: '🏙️' },
     { id: 'flats', icon: '🏢', tabs: ['chart', 'units', isPartner() && 'projects', Store.has('bookings') && 'bookings'] },
     (can('approvals') || can('flats')) && { id: 'changes', icon: '📐' },
     can('materials') && { id: 'materials', icon: '🧱', tabs: ['bills', 'monthly', 'bank', 'expenses'] },
-    can('labour') && { id: 'labour', icon: '👷', tabs: ['workers', 'attendance', 'labourPayments'] },
     can('visitors') && { id: 'visitors', icon: '🚶', tabs: ['visitors'] },
     isPartner() && { id: 'users', icon: '👥', tabs: ['users'] },
     { id: 'settings', icon: '⚙️' }
@@ -170,6 +172,7 @@ function render() {
   if (page.id === 'info') return renderInfo(main);
   if (page.id === 'changes') return renderChanges(main);
   if (page.id === 'daily') return renderDaily(main);
+  if (page.id === 'complaints') return renderComplaints(main);
   if (page.id === 'settings') return renderSettings(main);
 
   const tab = page.tabs.includes(state.tab[page.id]) ? state.tab[page.id] : page.tabs[0];
@@ -183,8 +186,7 @@ function render() {
 
   const body = document.createElement('div');
   main.appendChild(body);
-  if (tab === 'attendance') renderAttendance(body);
-  else if (tab === 'chart') renderChart(body);
+  if (tab === 'chart') renderChart(body);
   else if (tab === 'monthly') renderMonthly(body);
   else if (tab === 'bank') renderBankMatch(body);
   else renderList(body, tab);

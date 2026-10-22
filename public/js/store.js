@@ -16,8 +16,8 @@ async function api(method, url, body) {
 }
 
 const COLLECTIONS = [
-  'users', 'projects', 'units', 'bookings', 'changeRequests', 'dailyReports',
-  'bills', 'expenses', 'workers', 'attendance', 'labourPayments', 'visitors'
+  'users', 'projects', 'units', 'bookings', 'changeRequests', 'dailyReports', 'complaints',
+  'bills', 'expenses', 'visitors'
 ];
 
 const Store = {

@@ -6,11 +6,16 @@ import { normMobile } from './auth.js';
 export const MATERIALS = process.env.MATERIALS === 'on';
 
 // What a partner can tick for each staff member, supervisor or contractor
-export const PERMS = ['flats', 'approvals', 'daily', 'dailyView', 'labour', 'visitors', 'materials'];
+export const PERMS = ['daily', 'dailyView', 'complaints', 'flats', 'approvals', 'visitors', 'materials'];
+
+// The building wings a supervisor or contractor can be assigned to
+export const WINGS = ['A', 'B'];
 
 const isPartner = u => u.role === 'partner';
 export function can(u, perm) {
   if (perm === 'materials' && !MATERIALS) return false;
+  // Contractors always see and answer complaints for their wing
+  if (u.role === 'contractor' && perm === 'complaints') return true;
   // Contractors never handle flat owners or approve plan changes
   if (u.role === 'contractor' && (perm === 'flats' || perm === 'approvals')) return false;
   return isPartner(u) || (['staff', 'contractor'].includes(u.role) && u.perms.includes(perm));
@@ -23,11 +28,8 @@ export const FIELDS = {
   bookings: ['unitId', 'customerName', 'phone', 'address', 'bookingDate', 'notes'],
   bills: ['projectId', 'date', 'billNo', 'supplier', 'itemsText', 'gst', 'amount', 'photo', 'status', 'paidDate', 'paidMode', 'paidRef', 'notes'],
   expenses: ['projectId', 'date', 'category', 'amount', 'notes'],
-  workers: ['name', 'phone', 'kind', 'workType', 'projectId', 'wage', 'contractAmount'],
-  attendance: ['workerId', 'date', 'status'],
-  labourPayments: ['workerId', 'date', 'amount', 'mode', 'notes'],
   visitors: ['date', 'name', 'phone', 'interest', 'source', 'budget', 'attendedBy', 'status', 'followUp', 'notes'],
-  users: ['name', 'mobile', 'role', 'perms', 'active']
+  users: ['name', 'mobile', 'role', 'perms', 'wings', 'active']
 };
 
 // Who may create / edit / delete in each collection
@@ -37,9 +39,6 @@ const WRITE = {
   bookings: u => can(u, 'flats'),
   bills: u => can(u, 'materials'),
   expenses: u => can(u, 'materials'),
-  workers: u => can(u, 'labour'),
-  attendance: u => can(u, 'labour'),
-  labourPayments: u => can(u, 'labour'),
   visitors: u => can(u, 'visitors'),
   users: u => isPartner(u)
 };
@@ -47,11 +46,16 @@ export const canWrite = (u, coll) => !!(WRITE[coll] && u.role !== 'customer' && 
 
 // Linked records that block a delete
 export const REFS = {
-  projects: [['units', 'projectId'], ['bills', 'projectId'], ['expenses', 'projectId'], ['workers', 'projectId']],
+  projects: [['units', 'projectId'], ['bills', 'projectId'], ['expenses', 'projectId']],
   units: [['bookings', 'unitId'], ['changeRequests', 'unitId']],
-  bookings: [['changeRequests', 'bookingId']],
-  workers: [['attendance', 'workerId'], ['labourPayments', 'workerId']]
+  bookings: [['changeRequests', 'bookingId']]
 };
+
+// Partners see every wing; everyone else only the wings ticked for them.
+// A record for both wings ('both') is seen by everyone on either wing.
+export const seesWing = (u, wing) => isPartner(u) || wing === 'both' || (u.wings || []).includes(wing);
+const unitWing = unitId => (db.units.find(x => x.id === unitId) || {}).wing;
+export const canSeeComplaint = (u, c) => can(u, 'complaints') && seesWing(u, c.wing);
 
 export const customerBookings = u => db.bookings.filter(b => normMobile(b.phone) === u.mobile && b.pinHash);
 
@@ -83,17 +87,19 @@ export function readableData(u) {
   out.projects = db.projects;
   out.units = db.units;
   if (u.role === 'contractor') {
-    // Contractors see approved changes only, without customer names or phone numbers
+    // Contractors see approved changes in their wing only, without customer names or phone numbers
     out.changeRequests = db.changeRequests
-      .filter(c => c.status === 'approved' || c.status === 'done')
+      .filter(c => (c.status === 'approved' || c.status === 'done') && seesWing(u, unitWing(c.unitId)))
       .map(({ customerName, phone, ...c }) => c);
   } else if (can(u, 'flats') || can(u, 'approvals')) {
     out.bookings = db.bookings.map(publicBooking);
     out.changeRequests = db.changeRequests;
   }
-  if (can(u, 'daily') || can(u, 'dailyView')) out.dailyReports = db.dailyReports;
+  if (can(u, 'daily') || can(u, 'dailyView')) {
+    out.dailyReports = db.dailyReports.filter(r => r.userId === u.id || seesWing(u, r.wing || 'both'));
+  }
+  if (can(u, 'complaints')) out.complaints = db.complaints.filter(c => canSeeComplaint(u, c));
   if (can(u, 'materials')) { out.bills = db.bills; out.expenses = db.expenses; }
-  if (can(u, 'labour')) { out.workers = db.workers; out.attendance = db.attendance; out.labourPayments = db.labourPayments; }
   if (can(u, 'visitors')) out.visitors = db.visitors;
   if (isPartner(u)) out.users = db.users.map(publicUser);
   return out;
@@ -109,5 +115,7 @@ export function canReadFile(u, fileId) {
     (c.files || []).includes(fileId) || (c.finalFiles || []).includes(fileId));
   const inBills = (data.bills || []).some(b => b.photo === fileId);
   const inReports = (data.dailyReports || []).some(r => (r.photos || []).includes(fileId));
-  return inChanges || inBills || inReports;
+  const inComplaints = (data.complaints || []).some(c =>
+    (c.photos || []).includes(fileId) || (c.replies || []).some(r => (r.photos || []).includes(fileId)));
+  return inChanges || inBills || inReports || inComplaints;
 }
