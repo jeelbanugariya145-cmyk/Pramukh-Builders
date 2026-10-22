@@ -1,0 +1,16 @@
+{
+  "name": "pramukh-view",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Pramukh View construction management (Pramukh Builders & Shreeji Builders)",
+  "type": "module",
+  "scripts": {
+    "start": "node server/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.1.0"
+  }
+}

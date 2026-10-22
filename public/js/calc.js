@@ -11,6 +11,13 @@ function today() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+const thisMonth = () => today().slice(0, 7);
+
+function fmtMonth(ym) {
+  const [y, m] = ym.split('-').map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString(LANG === 'gu' ? 'gu-IN' : 'en-IN', { month: 'long', year: 'numeric' });
+}
+
 const ATT_VALUE = { present: 1, half: 0.5, absent: 0 };
 
 const Calc = {
@@ -36,34 +43,27 @@ const Calc = {
     return (p && u.bhk && Number(p['price' + u.bhk])) || 0;
   },
 
-  bookingLabel(id) {
-    const b = Store.get('bookings', id);
-    if (!b) return '';
-    return `${b.customerName} (${this.unitLabel(b.unitId)})`;
-  },
-
-  // Customer bookings
-  bookingPaid(b) {
-    return sum(Store.list('payments').filter(p => p.bookingId === b.id), p => p.amount);
-  },
-  bookingDue(b) {
-    return (Number(b.totalAmount) || 0) - this.bookingPaid(b);
-  },
   unitBooking(u) {
     return Store.list('bookings').find(b => b.unitId === u.id);
   },
   unitStatus(u) {
-    const b = this.unitBooking(u);
-    if (!b) return 'available';
-    return this.bookingDue(b) <= 0 ? 'sold' : 'booked';
+    return this.unitBooking(u) ? 'booked' : 'available';
   },
 
-  // Materials
-  materialCost(m) {
-    return (Number(m.qty) || 0) * (Number(m.rate) || 0);
+  // Latest plan change request for a flat (approved/done ones count first)
+  unitChange(u) {
+    const all = Store.list('changeRequests').filter(c => c.unitId === u.id);
+    const rank = { approved: 4, done: 3, pending: 2, rejected: 1 };
+    return all.sort((a, b) => (rank[b.status] - rank[a.status]) || (b.createdAt || '').localeCompare(a.createdAt || ''))[0];
   },
-  materialDue(m) {
-    return this.materialCost(m) - (Number(m.paid) || 0);
+
+  // Material bills
+  billPaid: b => b.status === 'paid',
+  monthBills(ym) {
+    return Store.list('bills').filter(b => (b.date || '').startsWith(ym));
+  },
+  suppliers() {
+    return [...new Set(Store.list('bills').map(b => (b.supplier || '').trim()).filter(Boolean))].sort();
   },
 
   // Labour
@@ -86,31 +86,23 @@ const Calc = {
     const units = Store.list('units').filter(inProject);
     const unitIds = new Set(units.map(u => u.id));
     const bookings = Store.list('bookings').filter(b => unitIds.has(b.unitId));
-    const materials = Store.list('materials').filter(inProject);
+    const bills = Store.list('bills').filter(inProject);
     const expenses = Store.list('expenses').filter(inProject);
     const workers = Store.list('workers').filter(inProject);
 
-    const sales = sum(bookings, b => b.totalAmount);
-    const received = sum(bookings, b => this.bookingPaid(b));
-    const material = sum(materials, m => this.materialCost(m));
+    const material = sum(bills, b => b.amount);
     const labour = sum(workers, w => this.workerEarned(w));
     const other = sum(expenses, e => e.amount);
-    const expense = material + labour + other;
-
     return {
       units: units.length,
       booked: bookings.length,
       available: units.length - bookings.length,
-      sales,
-      received,
-      custDue: sales - received,
       material,
       labour,
       other,
-      expense,
-      supplierDue: sum(materials, m => this.materialDue(m)),
-      labourDue: sum(workers, w => this.workerDue(w)),
-      profit: received - expense
+      expense: material + labour + other,
+      supplierDue: sum(bills.filter(b => !this.billPaid(b)), b => b.amount),
+      labourDue: sum(workers, w => this.workerDue(w))
     };
   }
 };
