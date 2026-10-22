@@ -1,0 +1,995 @@
+<title>Pramukh View સાઇટ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@600;700&family=Noto+Sans+Gujarati:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one phone column, sticky top bar, fixed bottom tab bar (site-office app) */
+:root {
+  --brand: #EE751C;      /* Pramukh View brochure orange */
+  --brand-ink: #B9560C;  /* orange for text and buttons */
+  --brand-soft: #FDEEE2;
+  --ink: #2A2A2A;        /* brochure charcoal */
+  --bg: #F6F4F1;
+  --card: #FFFFFF;
+  --card-2: #F1EEEA;
+  --text: #2A2A2A;
+  --muted: #6E6860;
+  --line: #E6E0D8;
+  --good: #2B7D3E;
+  --good-soft: #E6F3E9;
+  --bad: #BD3428;
+  --bad-soft: #FBE8E5;
+  --wait: #8A6100;
+  --wait-soft: #FFF3C8;
+  --change: #7B4BB8;
+  --change-soft: #F0E8FA;
+  --done: #2368A8;
+  --done-soft: #E2EEF9;
+  --font: 'Noto Sans Gujarati', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --display: 'Comfortaa', 'Noto Sans Gujarati', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --brand: #F48A3D; --brand-ink: #F7A25F; --brand-soft: #3A2414; --ink: #EDE8E2;
+    --bg: #151311; --card: #201D1A; --card-2: #2A2622; --text: #EDE8E2; --muted: #A69F96; --line: #37322D;
+    --good: #6CC784; --good-soft: #1B3022; --bad: #F08074; --bad-soft: #3A1E1A; --wait: #F0CF6A; --wait-soft: #3A3014;
+    --change: #C29BF0; --change-soft: #31253F; --done: #86BEF0; --done-soft: #1A2B3B; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --brand: #F48A3D; --brand-ink: #F7A25F; --brand-soft: #3A2414; --ink: #EDE8E2;
+  --bg: #151311; --card: #201D1A; --card-2: #2A2622; --text: #EDE8E2; --muted: #A69F96; --line: #37322D;
+  --good: #6CC784; --good-soft: #1B3022; --bad: #F08074; --bad-soft: #3A1E1A; --wait: #F0CF6A; --wait-soft: #3A3014;
+  --change: #C29BF0; --change-soft: #31253F; --done: #86BEF0; --done-soft: #1A2B3B; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.55; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--card); }
+button, input, select, textarea { font: inherit; color: inherit; }
+h1, h2, h3 { text-wrap: balance; line-height: 1.3; }
+
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--card); border-bottom: 1px solid var(--line);
+  padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.top img { height: 36px; width: auto; border-radius: 6px; background: #fff; }
+.top-title { font-weight: 700; font-size: 16px; text-align: right; }
+
+.page {
+  max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px;
+  padding-block: 16px 110px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.card h2 { font-size: 17px; margin: 0; }
+.card h3 { font-size: 15px; margin: 0; }
+.hint { color: var(--muted); font-size: 13px; margin: 0; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.between { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* Bottom tab bar */
+.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--card); border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px);
+}
+.tab { border: 0; background: none; padding: 8px 2px 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11.5px; color: var(--muted); cursor: pointer; position: relative; }
+.tab svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tab.on { color: var(--brand-ink); font-weight: 700; }
+.tab.on::before { content: ""; position: absolute; top: 0; left: 25%; right: 25%; height: 3px; border-radius: 0 0 3px 3px; background: var(--brand); }
+.tab .dot { position: absolute; top: 6px; right: calc(50% - 18px); min-width: 17px; height: 17px; border-radius: 9px; background: var(--bad); color: #fff; font-size: 10.5px; font-weight: 700; display: grid; place-items: center; padding: 0 4px; }
+
+/* Buttons and fields */
+.btn { border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 10px 16px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--text); min-height: 44px; }
+.btn-main { background: var(--brand-ink); border-color: var(--brand-ink); color: #fff; }
+.btn-good { background: var(--good); border-color: var(--good); color: #fff; }
+.btn-bad { color: var(--bad); }
+.btn-sm { min-height: 36px; padding: 6px 12px; font-size: 14px; }
+.btn-wide { width: 100%; }
+.btn:focus-visible, .tab:focus-visible, .flat:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.btn[disabled] { opacity: .55; }
+.field { display: flex; flex-direction: column; gap: 5px; font-weight: 600; font-size: 14px; }
+.field input, .field select, .field textarea, .inp {
+  border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 10px 12px; font-weight: 400; width: 100%; min-height: 44px;
+}
+textarea { resize: vertical; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { flex: 1; border: 0; background: var(--card); padding: 9px 10px; cursor: pointer; font-weight: 600; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button.on { background: var(--brand-ink); color: #fff; }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+.chip { border: 1px solid var(--line); background: var(--card); border-radius: 99px; padding: 6px 12px; white-space: nowrap; cursor: pointer; font-weight: 600; font-size: 14px; }
+.chip.on { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.chip .n { font-variant-numeric: tabular-nums; opacity: .7; margin-left: 4px; }
+
+.pill { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+.p-wait { background: var(--wait-soft); color: var(--wait); }
+.p-change { background: var(--change-soft); color: var(--change); }
+.p-done { background: var(--done-soft); color: var(--done); }
+.p-bad { background: var(--bad-soft); color: var(--bad); }
+.p-good { background: var(--good-soft); color: var(--good); }
+
+/* Home */
+.hero { position: relative; border-radius: 16px; overflow: hidden; min-height: 150px; display: flex; align-items: flex-end; background: var(--ink); }
+.hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 60% 35%; }
+.hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(238,117,28,.95), rgba(238,117,28,.6) 55%, rgba(238,117,28,0)); }
+.hero div { position: relative; z-index: 1; padding: 16px 18px; color: #fff; }
+.hero b { display: block; font-family: var(--display); font-size: 30px; line-height: 1.1; }
+.hero span { display: block; letter-spacing: .4em; color: #2A2A2A; font-family: var(--display); font-size: 16px; margin-top: 2px; }
+.hero small { display: block; font-size: 13px; margin-top: 8px; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tile { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+.tile .k { font-size: 13px; color: var(--muted); }
+.tile .v { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tile.alert { border-color: var(--bad); }
+.tile.alert .v { color: var(--bad); }
+.tile.ok .v { color: var(--good); }
+.groups { display: flex; align-items: center; justify-content: center; gap: 12px; background: #fff; border-radius: 12px; padding: 10px; }
+.groups img { height: 40px; width: auto; }
+.groups i { width: 1px; align-self: stretch; background: #2A2A2A; opacity: .4; }
+
+/* Daily report */
+.datebar { display: grid; grid-template-columns: 44px 1fr 44px; gap: 8px; align-items: center; }
+.datebar .btn { padding: 0; }
+.datebar input { text-align: center; font-weight: 700; }
+.today-tag { text-align: center; font-weight: 700; color: var(--brand-ink); font-size: 14px; }
+.check { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.check:first-of-type { border-top: 0; }
+.check .t { min-width: 0; overflow-wrap: anywhere; }
+.check.done .t { color: var(--muted); text-decoration: line-through; }
+.check.notdone .t { color: var(--bad); }
+.mark { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.mark button { border: 0; background: var(--card); padding: 8px 10px; cursor: pointer; font-weight: 700; font-size: 13px; min-height: 40px; }
+.mark button + button { border-left: 1px solid var(--line); }
+.mark .y.on { background: var(--good); color: #fff; }
+.mark .n.on { background: var(--bad); color: #fff; }
+.carry { grid-column: 1 / -1; justify-self: start; }
+.progress { height: 8px; background: var(--card-2); border-radius: 99px; overflow: hidden; }
+.progress i { display: block; height: 100%; background: var(--good); }
+.photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
+.photo { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: var(--card-2); max-width: 100%; }
+.photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo .x { position: absolute; top: 4px; right: 4px; width: 28px; height: 28px; border-radius: 50%; border: 0; background: rgba(0,0,0,.6); color: #fff; cursor: pointer; font-size: 16px; line-height: 1; }
+.add-photo { aspect-ratio: 1; border: 2px dashed var(--line); border-radius: 10px; display: grid; place-items: center; text-align: center; color: var(--brand-ink); font-weight: 700; font-size: 13px; cursor: pointer; padding: 6px; }
+.plan-item { display: grid; grid-template-columns: 22px 1fr 36px; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+.plan-item:first-child { border-top: 0; }
+.plan-item span:nth-child(2) { overflow-wrap: anywhere; min-width: 0; }
+.plan-item .rm { border: 0; background: none; color: var(--bad); font-size: 20px; cursor: pointer; min-height: 36px; }
+.add-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.saved { font-size: 13px; color: var(--good); font-weight: 600; min-height: 20px; }
+.history { display: flex; flex-direction: column; }
+.hist { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 10px 0; border-top: 1px solid var(--line); text-align: left; background: none; border-left: 0; border-right: 0; border-bottom: 0; cursor: pointer; width: 100%; }
+.hist:first-child { border-top: 0; }
+.hist .d { font-weight: 700; }
+.hist .s { grid-column: 1 / -1; color: var(--muted); font-size: 13.5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Flat chart */
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; }
+.legend i { display: inline-block; width: 13px; height: 13px; border-radius: 4px; margin-right: 5px; vertical-align: -2px; }
+.wing { display: flex; flex-direction: column; gap: 5px; }
+.wing h3 { font-family: var(--display); color: var(--brand-ink); }
+.floor { display: grid; grid-template-columns: 26px repeat(var(--n), minmax(0, 1fr)); gap: 5px; }
+.floor b { display: grid; place-items: center; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.flat { border: 1.5px solid transparent; border-radius: 8px; padding: 5px 7px; text-align: left; cursor: pointer; min-height: 46px; display: flex; flex-direction: column; justify-content: center; min-width: 0; position: relative; line-height: 1.25; }
+.flat .no { font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; }
+.flat .who { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.f-free { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+.f-booked { background: var(--brand); color: #fff; }
+.f-none { background: var(--card-2); color: var(--muted); border-color: var(--line); }
+.f-pending { background: var(--wait-soft); color: var(--wait); border-color: var(--wait); }
+.f-approved { background: var(--change); color: #fff; }
+.f-done { background: var(--done); color: #fff; }
+.flat.marked::after { content: ""; position: absolute; top: 0; right: 0; border-style: solid; border-width: 0 13px 13px 0; border-color: transparent var(--change) transparent transparent; border-top-right-radius: 6px; }
+
+/* Plan change cards */
+.ch { border: 1px solid var(--line); border-left: 5px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; background: var(--card); }
+.ch.pending { border-left-color: var(--wait); }
+.ch.approved { border-left-color: var(--change); }
+.ch.done { border-left-color: var(--done); }
+.ch.rejected { border-left-color: var(--bad); }
+.ch-flat { font-weight: 700; font-size: 16px; }
+.ch p { margin: 0; overflow-wrap: anywhere; white-space: pre-line; }
+.remark { background: var(--card-2); border-radius: 8px; padding: 8px 10px; font-size: 14px; }
+.list { display: flex; flex-direction: column; gap: 10px; }
+
+/* Simple lists */
+.item { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 10px 0; border-top: 1px solid var(--line); align-items: center; }
+.item:first-child { border-top: 0; }
+.item .m { color: var(--muted); font-size: 13px; grid-column: 1 / -1; overflow-wrap: anywhere; }
+.num { font-variant-numeric: tabular-nums; font-weight: 700; }
+.neg { color: var(--bad); }
+.pos { color: var(--good); }
+.menu { display: flex; flex-direction: column; }
+.menu button { display: flex; align-items: center; gap: 12px; padding: 14px 4px; border: 0; border-top: 1px solid var(--line); background: none; text-align: left; cursor: pointer; font-weight: 600; font-size: 16px; }
+.menu button:first-child { border-top: 0; }
+.menu small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; }
+.back { align-self: flex-start; }
+.att { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+.att:first-child { border-top: 0; }
+.att .seg button { padding: 7px 9px; font-size: 13px; }
+.att .seg .p.on { background: var(--good); }
+.att .seg .h.on { background: var(--brand-ink); }
+.att .seg .a.on { background: var(--bad); }
+.plan-img { width: 100%; border-radius: 10px; border: 1px solid var(--line); background: #fff; }
+.amen { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 14px; margin: 0; padding-left: 18px; }
+.empty { text-align: center; padding: 18px 8px; color: var(--muted); }
+.example { background: var(--wait-soft); color: var(--wait); border-radius: 12px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; font-weight: 600; }
+
+/* Bottom sheet */
+dialog.sheet { border: 0; padding: 0; margin: auto auto 0; width: 100%; max-width: 640px; max-height: 92vh; border-radius: 18px 18px 0 0; background: var(--card); color: var(--text); }
+dialog.sheet::backdrop { background: rgba(20, 16, 12, .5); }
+.sheet form, .sheet > div { padding: 18px max(16px, env(safe-area-inset-left, 0px)) calc(18px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 12px; }
+.sheet h2 { margin: 0; font-size: 18px; }
+.sheet .grab { width: 40px; height: 4px; border-radius: 4px; background: var(--line); align-self: center; }
+.err { color: var(--bad); font-size: 14px; margin: 0; }
+.err:empty { display: none; }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 50; background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-weight: 600; max-width: calc(100% - 32px); }
+.toast.bad { background: var(--bad); color: #fff; }
+.busy { position: fixed; inset: 0; z-index: 60; background: rgba(20,16,12,.45); display: grid; place-items: center; }
+.busy div { background: var(--card); padding: 16px 20px; border-radius: 12px; font-weight: 700; }
+
+@media (min-width: 700px) {
+  .tiles { grid-template-columns: repeat(3, 1fr); }
+  .wings { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .toast { animation: rise .2s ease-out; }
+  @keyframes rise { from { transform: translate(-50%, 8px); opacity: 0; } }
+}
+</style>
+
+<header class="top">
+  <img src="assets/logo-pramukh-view.jpg" alt="Pramukh View">
+  <div class="top-title" id="topTitle">સાઇટ ઓફિસ</div>
+</header>
+<main class="page" id="page"><div class="card empty">લોડ થાય છે…</div></main>
+<nav class="tabs" id="tabs" aria-label="મેનુ"></nav>
+<dialog class="sheet" id="sheet"></dialog>
+
+<script>
+// ---------- Fixed project facts (from the Pramukh View brochure) ----------
+const WINGS = [
+  { wing: 'A', bhk: 4, area: 1775, parking: 2, floors: 14, per: 2 },
+  { wing: 'B', bhk: 3, area: 1350, parking: 1, floors: 14, per: 3 }
+];
+const FLATS = [];
+WINGS.forEach(w => {
+  for (let f = 1; f <= w.floors; f++) for (let n = 1; n <= w.per; n++) {
+    const no = String(f * 100 + n);
+    FLATS.push({ id: `${w.wing}-${no}`, wing: w.wing, no, floor: f, bhk: w.bhk, area: w.area, parking: w.parking });
+  }
+});
+const FLAT = Object.fromEntries(FLATS.map(f => [f.id, f]));
+const PHONE = '9081 9191 14';
+const ADDRESS = '2nd 150 ફૂટ રિંગ રોડ, સ્પીડવેલ પાર્ટી પ્લોટ હવેલી રોડ, પારસાણા ચોક, તુલસી હાઇટ પાસે, મોટા મવા, રાજકોટ.';
+const AMENITIES = ['જીમ', 'મલ્ટીપર્પઝ હોલ', 'ગ્રાન્ડ રિસેપ્શન', 'ગ્રીન લેન્ડસ્કેપિંગ', 'બાળકો માટે રમતનું મેદાન', 'ગઝેબો', 'સિનિયર સિટીઝન બેઠક',
+  '4 BHK માટે 2 કાર પાર્કિંગ', '3 BHK માટે 1 કાર પાર્કિંગ', 'આઉટડોર બેઠક', 'ઇન્ટરકોમ', 'કોમન એરિયામાં CCTV', 'ફાયર સેફ્ટી', 'સિક્યોરિટી રૂમ',
+  'બૂમ બેરિયર સાથે એન્ટ્રી ગેટ', 'બાળકો માટે પિક-અપ / ડ્રોપ', 'કોમન એરિયા પાવર બેકઅપ', 'ઓટો ડોર લિફ્ટ', 'સોલર વોટર હીટર', 'ગેસ કનેક્શન'];
+
+const COLLS = ['daily', 'owners', 'changes', 'visitors', 'workers', 'attendance', 'labourPay'];
+
+// ---------- State ----------
+const S = {
+  tab: 'home', more: null, labourTab: 'workers', day: '', draft: null, draftDay: '', dirty: false,
+  flatMode: 'booking', changeFilter: 'pending', attDay: '',
+  data: Object.fromEntries(COLLS.map(c => [c, {}])), loaded: new Set(), status: 'loading'
+};
+let db = null, assets = null;
+
+// ---------- Small helpers ----------
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const today = () => ymd(new Date());
+const shiftDay = (s, n) => { const d = new Date(s + 'T12:00:00'); d.setDate(d.getDate() + n); return ymd(d); };
+const fmt = s => s ? s.slice(0, 10).split('-').reverse().join('-') : '';
+const dayName = s => new Date(s + 'T12:00:00').toLocaleDateString('gu-IN', { weekday: 'long' });
+const money = n => '₹ ' + Math.round(Number(n) || 0).toLocaleString('en-IN');
+const list = c => Object.entries(S.data[c]).map(([id, v]) => ({ id, ...v }));
+const blob = id => '/_blob/' + id;
+const newId = () => db.collection('x').doc().id;
+const digits = p => String(p || '').replace(/\D/g, '');
+const wa = p => { const d = digits(p); return 'https://wa.me/' + (d.length === 10 ? '91' + d : d); };
+
+function toast(msg, bad) {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const t = document.createElement('div');
+  t.className = 'toast' + (bad ? ' bad' : '');
+  t.setAttribute('role', 'status');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+function busy(msg) {
+  let b = $('.busy');
+  if (!msg) { if (b) b.remove(); return; }
+  if (!b) { b = document.createElement('div'); b.className = 'busy'; document.body.appendChild(b); }
+  b.innerHTML = `<div>${esc(msg)}</div>`;
+}
+
+// One write at a time per document
+const queues = {};
+function write(coll, id, fn) {
+  const key = coll + '/' + id;
+  const run = (queues[key] || Promise.resolve()).then(fn).catch(e => {
+    toast(e && e.code === 'quota_exceeded' ? 'જગ્યા ભરાઈ ગઈ છે. જૂની એન્ટ્રી કાઢો.' : 'સેવ ન થયું. ઇન્ટરનેટ ચેક કરીને ફરી પ્રયાસ કરો.', true);
+    throw e;
+  });
+  queues[key] = run.catch(() => {});
+  return run;
+}
+const put = (coll, id, data) => write(coll, id, () => db.collection(coll).doc(id).set(data));
+const remove = (coll, id) => write(coll, id, () => db.collection(coll).doc(id).delete());
+
+// Shrinks a phone photo before upload so it goes quickly over mobile data
+function shrink(file) {
+  return new Promise(resolve => {
+    if (!file.type.startsWith('image/') || file.type === 'image/gif') return resolve(file);
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, 1800 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src);
+      c.toBlob(b => resolve(b || file), 'image/jpeg', 0.85);
+    };
+    img.onerror = () => resolve(file);
+    img.src = URL.createObjectURL(file);
+  });
+}
+async function uploadPhotos(files) {
+  if (!assets) { toast('ફોટો અપલોડ આ ફોનમાં ચાલુ નથી.', true); return []; }
+  const ids = [];
+  let i = 0;
+  for (const f of files) {
+    busy(`ફોટો અપલોડ થાય છે… ${++i}/${files.length}`);
+    try { ids.push((await assets.upload(await shrink(f), { type: f.type === 'application/pdf' ? 'application/pdf' : 'image/jpeg' })).id); }
+    catch (e) { toast(e && e.code === 'too_large' ? 'ફોટો બહુ મોટો છે.' : 'ફોટો અપલોડ ન થયો. ફરી પ્રયાસ કરો.', true); }
+  }
+  busy('');
+  return ids;
+}
+const photoGrid = (ids, removeAct) => (ids || []).map(id => `
+  <div class="photo"><a href="${blob(id)}" target="_blank" rel="noopener"><img src="${blob(id)}" alt="સાઇટ ફોટો" loading="lazy"></a>
+  ${removeAct ? `<button class="x" data-act="${removeAct}" data-id="${id}" aria-label="ફોટો કાઢો">×</button>` : ''}</div>`).join('');
+
+// Re-render, but never while someone is typing (a save would jump the cursor)
+let pendingRender = false;
+const typing = () => { const a = document.activeElement; return a && $('#page').contains(a) && /INPUT|TEXTAREA|SELECT/.test(a.tagName) && a.type !== 'file'; };
+function render(force) {
+  if (!force && typing()) { pendingRender = true; return; }
+  pendingRender = false;
+  renderTabs();
+  $('#page').innerHTML = view();
+  // Keep an open flat sheet in step with new data
+  if (S.sheetFlat && $('#sheet').open && !$('#sheet form')) {
+    const top = $('#sheet').scrollTop;
+    openFlat(S.sheetFlat);
+    $('#sheet').scrollTop = top;
+  }
+}
+document.addEventListener('focusout', () => setTimeout(() => { if (pendingRender) render(); }, 0));
+
+// ---------- Derived facts ----------
+const owner = flatId => S.data.owners[flatId];
+const flatChanges = flatId => list('changes').filter(c => c.flatId === flatId);
+function flatChangeStatus(flatId) {
+  const rank = { approved: 4, done: 3, pending: 2, rejected: 1 };
+  const c = flatChanges(flatId).sort((a, b) => rank[b.status] - rank[a.status])[0];
+  return c ? c.status : 'none';
+}
+const reportDays = () => Object.keys(S.data.daily).sort();
+const prevReportDay = d => reportDays().filter(k => k < d && (S.data.daily[k].plan || []).length).pop();
+function workerDays(w) {
+  let days = 0;
+  Object.values(S.data.attendance).forEach(a => { const m = (a.marks || {})[w.id]; days += m === 'p' ? 1 : m === 'h' ? 0.5 : 0; });
+  return days;
+}
+const workerEarned = w => w.kind === 'contractor' ? Number(w.contract) || 0 : workerDays(w) * (Number(w.wage) || 0);
+const workerPaid = w => list('labourPay').filter(p => p.workerId === w.id).reduce((s, p) => s + (Number(p.amount) || 0), 0);
+const hasExamples = () => COLLS.some(c => Object.values(S.data[c]).some(v => v && v.example));
+
+// ---------- Tabs ----------
+const ICONS = {
+  home: '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+  daily: '<rect x="4" y="4" width="16" height="17" rx="2"/><path d="M8 2v4M16 2v4M4 9h16M8 13l2 2 4-4"/>',
+  flats: '<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/>',
+  changes: '<path d="M4 20h4l11-11-4-4L4 16z"/><path d="M13 7l4 4"/>',
+  more: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>'
+};
+const TAB_NAMES = { home: 'હોમ', daily: 'દૈનિક કામ', flats: 'ફ્લેટ', changes: 'પ્લાન ફેરફાર', more: 'વધુ' };
+function renderTabs() {
+  const pending = list('changes').filter(c => c.status === 'pending').length;
+  $('#tabs').innerHTML = Object.keys(TAB_NAMES).map(k => `
+    <button class="tab ${S.tab === k ? 'on' : ''}" data-act="tab" data-id="${k}" ${S.tab === k ? 'aria-current="page"' : ''}>
+      <svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg>${TAB_NAMES[k]}
+      ${k === 'changes' && pending ? `<span class="dot">${pending}</span>` : ''}
+    </button>`).join('');
+  $('#topTitle').textContent = S.tab === 'more' && S.more ? ({ visitors: 'મુલાકાતીઓ', labour: 'મજૂર', info: 'પ્રોજેક્ટ માહિતી' })[S.more] : TAB_NAMES[S.tab];
+}
+
+function view() {
+  if (S.status === 'nodb') return `<div class="card"><h2>આ પેજ ખોલી શકાયું નહીં</h2><p class="hint">claude.ai માં તમારા એકાઉન્ટથી લોગિન કરીને આ લિંક ફરી ખોલો.</p></div>`;
+  if (S.loaded.size < COLLS.length) return `<div class="card empty">લોડ થાય છે…</div>`;
+  const banner = hasExamples() ? `<div class="example"><span>અમુક ઉદાહરણ એન્ટ્રી છે (📌). કામ શરૂ કરો ત્યારે કાઢી નાખો.</span>
+    <button class="btn btn-sm" data-act="clearExamples" data-confirm>ઉદાહરણ કાઢો</button></div>` : '';
+  const v = { home: viewHome, daily: viewDaily, flats: viewFlats, changes: viewChanges, more: viewMore }[S.tab]();
+  return banner + v;
+}
+
+// ---------- Home ----------
+function viewHome() {
+  const t = today();
+  const rep = S.data.daily[t];
+  const pending = list('changes').filter(c => c.status === 'pending').length;
+  const approved = list('changes').filter(c => c.status === 'approved').length;
+  const booked = FLATS.filter(f => owner(f.id)).length;
+  const visitorsToday = list('visitors').filter(v => v.date === t).length;
+  const follow = list('visitors').filter(v => v.followUp && v.followUp <= t && !['booked', 'no'].includes(v.status)).length;
+  const prev = prevReportDay(t);
+  const plan = prev ? S.data.daily[prev].plan : [];
+  const checked = plan.filter(p => p.status).length;
+  const labourDue = list('workers').reduce((sum, w) => sum + Math.max(0, workerEarned(w) - workerPaid(w)), 0);
+  const tile = (k, v, go, cls = '') => `<button class="tile ${cls}" data-act="go" data-id="${go}"><span class="k">${k}</span><span class="v">${v}</span></button>`;
+  return `
+    <section class="hero"><img src="assets/banner.jpg" alt=""><div><small>સરનામું… સુખ-સમૃદ્ધિનું…</small><b>Pramukh</b><span>VIEW</span><small>${dayName(t)}, ${fmt(t)}</small></div></section>
+    <section class="card">
+      <div class="between"><h2>આજનો સાઇટ રિપોર્ટ</h2>${rep && rep.workDone ? '<span class="pill p-good">✓ ભર્યો</span>' : '<span class="pill p-wait">બાકી</span>'}</div>
+      ${plan.length ? `<p class="hint">ગઈકાલે નક્કી કરેલું કામ: ${checked}/${plan.length} ચેક થયું</p>` : ''}
+      <button class="btn btn-main btn-wide" data-act="go" data-id="daily">${rep && rep.workDone ? 'આજનો રિપોર્ટ જુઓ' : '+ આજનું કામ અને ફોટા ઉમેરો'}</button>
+    </section>
+    <div class="tiles">
+      ${tile('પ્લાન ફેરફાર: મંજૂરી બાકી', pending, 'changes:pending', pending ? 'alert' : '')}
+      ${tile('મંજૂર ફેરફાર: કામ બાકી', approved, 'changes:approved')}
+      ${tile('બુક થયેલા ફ્લેટ', `${booked} / ${FLATS.length}`, 'flats')}
+      ${tile('આજના મુલાકાતીઓ', visitorsToday, 'more:visitors')}
+      ${tile('ફોલો-અપ બાકી', follow, 'more:visitors', follow ? 'alert' : '')}
+      ${tile('મજૂરી ચૂકવવાની બાકી', money(labourDue), 'more:labour')}
+    </div>
+    <div class="groups"><img src="assets/logo-pramukh-builders.jpg" alt="Pramukh Builders"><i></i><img src="assets/logo-shreeji-builders.jpg" alt="Shreeji Builders"></div>`;
+}
+
+// ---------- Daily site report ----------
+function loadDraft() {
+  if (!S.day) S.day = today();
+  if (S.draftDay !== S.day || (!S.dirty && S.data.daily[S.day])) {
+    const doc = S.data.daily[S.day] || {};
+    S.draft = { workDone: doc.workDone || '', workers: doc.workers ?? '', photos: [...(doc.photos || [])], plan: (doc.plan || []).map(p => ({ ...p })), example: !!doc.example };
+    S.draftDay = S.day;
+    S.dirty = false;
+  }
+}
+async function saveDraft() {
+  const d = S.day, dr = S.draft;
+  const empty = !dr.workDone.trim() && !dr.photos.length && !dr.plan.length && dr.workers === '';
+  S.dirty = false;
+  if (empty && !S.data.daily[d]) return;
+  await put('daily', d, { date: d, workDone: dr.workDone, workers: dr.workers === '' ? '' : Number(dr.workers), photos: dr.photos, plan: dr.plan, example: dr.example, updatedAt: new Date().toISOString() });
+  const s = $('#savedAt');
+  if (s) s.textContent = 'સેવ થયું ✓ ' + new Date().toLocaleTimeString('gu-IN', { hour: '2-digit', minute: '2-digit' });
+}
+function viewDaily() {
+  loadDraft();
+  const d = S.day, dr = S.draft, isToday = d === today();
+  const prev = prevReportDay(d);
+  const plan = prev ? S.data.daily[prev].plan : [];
+  const done = plan.filter(p => p.status === 'done').length;
+  const inDraft = text => dr.plan.some(p => p.text === text);
+  const history = reportDays().reverse().slice(0, 30);
+
+  return `
+    <div class="datebar">
+      <button class="btn" data-act="day" data-id="-1" aria-label="આગલો દિવસ">‹</button>
+      <input class="inp" type="date" id="dayPick" value="${d}" max="${today()}" aria-label="તારીખ">
+      <button class="btn" data-act="day" data-id="1" aria-label="પછીનો દિવસ" ${isToday ? 'disabled' : ''}>›</button>
+    </div>
+    <div class="today-tag">${isToday ? 'આજ · ' : ''}${dayName(d)}</div>
+
+    <section class="card">
+      <div class="between"><h2>ગઈકાલે નક્કી કરેલું કામ</h2>${plan.length ? `<span class="num">${done}/${plan.length} થયું</span>` : ''}</div>
+      ${plan.length ? `
+        <p class="hint">${fmt(prev)} ના રિપોર્ટમાં લખેલું. દરેક કામ થયું કે નહીં તે ટિક કરો.</p>
+        <div class="progress"><i style="width:${Math.round(done / plan.length * 100)}%"></i></div>
+        <div>${plan.map((p, i) => `
+          <div class="check ${p.status || ''}">
+            <span class="t">${esc(p.text)}</span>
+            <div class="mark" role="group" aria-label="${esc(p.text)}">
+              <button class="y ${p.status === 'done' ? 'on' : ''}" data-act="mark" data-id="${i}" data-v="done">✓ થયું</button>
+              <button class="n ${p.status === 'notdone' ? 'on' : ''}" data-act="mark" data-id="${i}" data-v="notdone">✕ નથી થયું</button>
+            </div>
+            ${p.status === 'notdone' && !inDraft(p.text) ? `<button class="btn btn-sm carry" data-act="carry" data-id="${i}">↪ આવતીકાલના કામમાં ફરી ઉમેરો</button>` : ''}
+          </div>`).join('')}</div>`
+      : `<p class="hint">આગલા દિવસના રિપોર્ટમાં "આવતીકાલે શું કામ થશે" લખ્યું હશે તો તે અહીં ચેકલિસ્ટ તરીકે આવશે.</p>`}
+    </section>
+
+    <section class="card">
+      <h2>${isToday ? 'આજે' : fmt(d) + ' ના દિવસે'} શું કામ થયું</h2>
+      <textarea class="inp" id="workDone" rows="4" placeholder="દા.ત. વિંગ A 9મા માળનો સ્લેબ ભર્યો, વિંગ B માં 4થા માળે બ્લોક કામ">${esc(dr.workDone)}</textarea>
+      <div class="photos">
+        ${photoGrid(dr.photos, 'rmPhoto')}
+        ${assets ? `<label class="add-photo">📷<br>ફોટો ઉમેરો<input type="file" id="dayPhotos" accept="image/*" multiple hidden></label>` : ''}
+      </div>
+      <label class="field">સાઇટ પર કુલ માણસો (વૈકલ્પિક)
+        <input type="number" inputmode="numeric" min="0" id="workers" value="${esc(dr.workers)}" placeholder="દા.ત. 35"></label>
+    </section>
+
+    <section class="card">
+      <h2>${isToday ? 'આવતીકાલે' : 'પછીના દિવસે'} શું કામ થશે</h2>
+      <div>${dr.plan.length ? dr.plan.map((p, i) => `
+        <div class="plan-item"><span>${i + 1}.</span><span>${esc(p.text)}</span>
+          <button class="rm" data-act="rmPlan" data-id="${i}" aria-label="કાઢો">×</button></div>`).join('')
+        : '<p class="hint">એક-એક કામ અલગ લખો. બીજા દિવસે તે ચેકલિસ્ટ બનીને આવશે.</p>'}</div>
+      <div class="add-row">
+        <input class="inp" id="planText" placeholder="દા.ત. વિંગ A 10મા માળનું શટરિંગ" enterkeyhint="done">
+        <button class="btn btn-main" data-act="addPlan">ઉમેરો</button>
+      </div>
+      <div class="saved" id="savedAt" aria-live="polite"></div>
+    </section>
+
+    <section class="card">
+      <h2>જૂના રિપોર્ટ</h2>
+      ${history.length ? `<div class="history">${history.map(k => {
+        const r = S.data.daily[k];
+        const nxt = reportDays().find(x => x > k);
+        const pl = r.plan || [];
+        const pd = pl.filter(p => p.status === 'done').length;
+        return `<button class="hist" data-act="openDay" data-id="${k}">
+          <span class="d">${r.example ? '📌 ' : ''}${fmt(k)} · ${dayName(k)}</span>
+          <span class="hint">${(r.photos || []).length ? '📷 ' + r.photos.length : ''}${pl.length ? ` · આયોજન ${pd}/${pl.length} થયું` : ''}</span>
+          <span class="s">${esc(r.workDone || '—')}</span></button>`;
+      }).join('')}</div>` : '<p class="hint">હજુ કોઈ રિપોર્ટ નથી.</p>'}
+    </section>`;
+}
+
+// ---------- Flats ----------
+function viewFlats() {
+  const booking = S.flatMode === 'booking';
+  const counts = { none: 0, pending: 0, approved: 0, done: 0, rejected: 0 };
+  FLATS.forEach(f => counts[flatChangeStatus(f.id)]++);
+  const booked = FLATS.filter(f => owner(f.id)).length;
+  const legend = booking
+    ? `<span><i style="background:var(--good-soft);border:1.5px solid var(--good)"></i>ખાલી ${FLATS.length - booked}</span>
+       <span><i style="background:var(--brand)"></i>બુક ${booked}</span>
+       <span><i style="background:linear-gradient(225deg,var(--change) 50%,var(--card-2) 50%)"></i>મંજૂર પ્લાન ફેરફાર</span>`
+    : `<span><i style="background:var(--change)"></i>મંજૂર, કામ બાકી ${counts.approved}</span>
+       <span><i style="background:var(--done)"></i>કામ પૂરું ${counts.done}</span>
+       <span><i style="background:var(--wait-soft);border:1.5px solid var(--wait)"></i>મંજૂરી બાકી ${counts.pending}</span>`;
+  const cell = f => {
+    const o = owner(f.id), cs = flatChangeStatus(f.id);
+    if (booking) {
+      return `<button class="flat ${o ? 'f-booked' : 'f-free'} ${cs === 'approved' || cs === 'done' ? 'marked' : ''}" data-act="flat" data-id="${f.id}">
+        <span class="no">${f.no}</span><span class="who">${o ? esc(o.name) : 'ખાલી'}</span></button>`;
+    }
+    const cls = { none: 'f-none', rejected: 'f-none', pending: 'f-pending', approved: 'f-approved', done: 'f-done' }[cs];
+    const label = { none: '', rejected: '', pending: 'મંજૂરી બાકી', approved: 'મંજૂર', done: 'પૂરું' }[cs];
+    return `<button class="flat ${cls}" data-act="flat" data-id="${f.id}"><span class="no">${f.no}</span><span class="who">${label}</span></button>`;
+  };
+  return `
+    <div class="seg" role="group" aria-label="ચાર્ટ">
+      <button class="${booking ? 'on' : ''}" data-act="flatMode" data-id="booking">બુકિંગ</button>
+      <button class="${booking ? '' : 'on'}" data-act="flatMode" data-id="changes">પ્લાન ફેરફાર</button>
+    </div>
+    <div class="legend">${legend}</div>
+    <p class="hint">ફ્લેટ પર ક્લિક કરો: માલિકની વિગત, પ્લાન અને ફેરફારની વિનંતી.</p>
+    <div class="wings">${WINGS.map(w => `
+      <section class="card wing">
+        <div class="between"><h3>વિંગ ${w.wing}</h3><span class="hint">${w.bhk} BHK · ${w.area} ચો.ફૂટ</span></div>
+        ${Array.from({ length: w.floors }, (_, i) => w.floors - i).map(fl => `
+          <div class="floor" style="--n:${w.per}"><b>${fl}</b>${FLATS.filter(f => f.wing === w.wing && f.floor === fl).map(cell).join('')}</div>`).join('')}
+      </section>`).join('')}</div>`;
+}
+
+function openFlat(id) {
+  const f = FLAT[id], o = owner(id);
+  const chs = flatChanges(id).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  openSheet(`<div>
+    <div class="grab"></div>
+    <div class="between"><h2>ફ્લેટ ${f.id}</h2><button class="btn btn-sm" data-act="close">બંધ</button></div>
+    <p class="hint">${f.bhk} BHK · માળ ${f.floor} · ${f.area} ચો.ફૂટ કાર્પેટ · ${f.parking} કાર પાર્કિંગ</p>
+    <section class="card">
+      <h3>ફ્લેટ માલિક</h3>
+      ${o ? `
+        <div><strong>${o.example ? '📌 ' : ''}${esc(o.name)}</strong>${o.date ? `<span class="hint"> · બુકિંગ ${fmt(o.date)}</span>` : ''}</div>
+        ${o.phone ? `<div class="row"><span class="num">${esc(o.phone)}</span><a class="btn btn-sm" href="${wa(o.phone)}" target="_blank" rel="noopener">💬 WhatsApp</a></div>` : ''}
+        ${o.address ? `<p class="hint">${esc(o.address)}</p>` : ''}
+        ${o.notes ? `<p class="hint">${esc(o.notes)}</p>` : ''}
+        <div class="row"><button class="btn btn-sm" data-act="ownerForm" data-id="${id}">સુધારો</button>
+          <button class="btn btn-sm btn-bad" data-act="rmOwner" data-id="${id}" data-confirm>માલિક કાઢો</button></div>`
+      : `<p class="hint">ફ્લેટ ખાલી છે.</p><button class="btn btn-main" data-act="ownerForm" data-id="${id}">+ ફ્લેટ માલિક ઉમેરો</button>`}
+    </section>
+    <section class="card">
+      <h3>પ્લાન (${f.bhk} BHK)</h3>
+      <a href="assets/plan-${f.bhk}bhk.jpg" target="_blank" rel="noopener"><img class="plan-img" src="assets/plan-${f.bhk}bhk.jpg" alt="${f.bhk} BHK પ્લાન" loading="lazy"></a>
+    </section>
+    <section class="card">
+      <div class="between"><h3>પ્લાન ફેરફાર</h3><button class="btn btn-sm btn-main" data-act="changeForm" data-id="${id}">+ વિનંતી</button></div>
+      ${chs.length ? `<div class="list">${chs.map(changeCard).join('')}</div>` : '<p class="hint">આ ફ્લેટમાં કોઈ ફેરફારની વિનંતી નથી.</p>'}
+    </section>
+  </div>`, id);
+}
+
+function ownerForm(flatId) {
+  const o = owner(flatId) || {};
+  openSheet(`<form data-form="owner" data-id="${flatId}">
+    <div class="grab"></div><h2>ફ્લેટ ${flatId}: માલિક</h2>
+    <label class="field">નામ *<input name="name" id="o-name" required value="${esc(o.name)}" autocomplete="off"></label>
+    <label class="field">મોબાઇલ<input name="phone" id="o-phone" type="tel" inputmode="tel" value="${esc(o.phone)}"></label>
+    <label class="field">બુકિંગ તારીખ<input name="date" id="o-date" type="date" value="${esc(o.date || today())}"></label>
+    <label class="field">સરનામું<textarea name="address" id="o-address" rows="2">${esc(o.address)}</textarea></label>
+    <label class="field">નોંધ<textarea name="notes" id="o-notes" rows="2">${esc(o.notes)}</textarea></label>
+    <p class="err"></p>
+    <div class="row"><button type="button" class="btn" data-act="openFlat" data-id="${flatId}">પાછા</button><button class="btn btn-main" style="flex:1">સેવ કરો</button></div>
+  </form>`);
+}
+
+// ---------- Plan changes ----------
+const CS = { pending: ['મંજૂરી બાકી', 'p-wait'], approved: ['મંજૂર · કામ બાકી', 'p-change'], done: ['કામ પૂરું', 'p-done'], rejected: ['નામંજૂર', 'p-bad'] };
+function changeCard(c) {
+  const f = FLAT[c.flatId] || {}, o = owner(c.flatId);
+  const acts = {
+    pending: `<button class="btn btn-sm btn-good" data-act="decide" data-id="${c.id}" data-v="approved">✓ મંજૂર</button>
+              <button class="btn btn-sm btn-bad" data-act="decide" data-id="${c.id}" data-v="rejected">✕ નામંજૂર</button>`,
+    approved: `<button class="btn btn-sm btn-good" data-act="chDone" data-id="${c.id}">✓ કામ પૂરું થયું</button>
+               <button class="btn btn-sm" data-act="decide" data-id="${c.id}" data-v="approved">ફાઇનલ પ્લાન / નોંધ</button>`,
+    done: `<button class="btn btn-sm" data-act="chUndo" data-id="${c.id}">કામ બાકી છે</button>`,
+    rejected: `<button class="btn btn-sm" data-act="decide" data-id="${c.id}" data-v="approved">ફરી તપાસો</button>`
+  }[c.status];
+  return `<article class="ch ${c.status}">
+    <div class="between"><span><span class="ch-flat">${c.example ? '📌 ' : ''}${esc(c.flatId)}</span> <span class="hint">${f.bhk || ''} BHK${o ? ' · ' + esc(o.name) : ''}</span></span>
+      <span class="pill ${CS[c.status][1]}">${CS[c.status][0]}</span></div>
+    <p>${esc(c.description)}</p>
+    ${(c.finalPhotos || []).length ? `<p class="hint">ફાઇનલ પ્લાન</p><div class="photos">${photoGrid(c.finalPhotos)}</div>` : ''}
+    ${(c.photos || []).length ? `<p class="hint">ગ્રાહકનો પ્લાન / ફોટા</p><div class="photos">${photoGrid(c.photos)}</div>` : ''}
+    <p class="hint">વિનંતી ${fmt(c.createdAt)}${c.decidedAt ? ' · નિર્ણય ' + fmt(c.decidedAt) : ''}${c.doneAt ? ' · પૂરું ' + fmt(c.doneAt) : ''}</p>
+    ${c.remark ? `<div class="remark"><strong>નોંધ:</strong> ${esc(c.remark)}</div>` : ''}
+    <div class="row">${acts}<button class="btn btn-sm btn-bad" data-act="rmChange" data-id="${c.id}" data-confirm>કાઢો</button></div>
+  </article>`;
+}
+function viewChanges() {
+  const all = list('changes');
+  const keys = ['pending', 'approved', 'done', 'rejected'];
+  const shown = all.filter(c => c.status === S.changeFilter).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  return `
+    <section class="card">
+      <p class="hint">ગ્રાહક WhatsApp પર ફેરફાર દોરેલો પ્લાન મોકલે, તે અહીં ઉમેરો. સિવિલમાં તપાસીને મંજૂર કે નામંજૂર કરો. મંજૂર થયેલા ફ્લેટ ચાર્ટમાં જાંબલી દેખાય છે.</p>
+      <button class="btn btn-main" data-act="changeForm">+ નવી ફેરફારની વિનંતી</button>
+    </section>
+    <div class="chips" role="group" aria-label="ફિલ્ટર">${keys.map(k => `<button class="chip ${S.changeFilter === k ? 'on' : ''}" data-act="chFilter" data-id="${k}">${CS[k][0]}<span class="n">${all.filter(c => c.status === k).length}</span></button>`).join('')}</div>
+    <div class="list">${shown.length ? shown.map(changeCard).join('') : '<div class="card empty">અહીં કોઈ વિનંતી નથી.</div>'}</div>`;
+}
+function changeForm(flatId) {
+  openSheet(`<form data-form="change">
+    <div class="grab"></div><h2>પ્લાન ફેરફારની વિનંતી</h2>
+    <label class="field">ફ્લેટ *<select name="flatId" id="c-flat" required>
+      <option value="">પસંદ કરો</option>
+      ${FLATS.map(f => `<option value="${f.id}" ${f.id === flatId ? 'selected' : ''}>${f.id} (${f.bhk} BHK)${owner(f.id) ? ' · ' + esc(owner(f.id).name) : ''}</option>`).join('')}
+    </select></label>
+    <label class="field">શું ફેરફાર કરવો છે? *<textarea name="description" id="c-desc" rows="3" required placeholder="દા.ત. કિચન અને ડાઇનિંગ વચ્ચેની દીવાલ કાઢવી"></textarea></label>
+    ${assets ? `<label class="field">ગ્રાહકે મોકલેલો પ્લાન / ફોટા<input type="file" name="photos" id="c-photos" accept="image/*,application/pdf" multiple></label>` : ''}
+    <p class="err"></p>
+    <div class="row"><button type="button" class="btn" data-act="close">રદ</button><button class="btn btn-main" style="flex:1">સેવ કરો</button></div>
+  </form>`);
+}
+function decideForm(id, status) {
+  const c = S.data.changes[id];
+  openSheet(`<form data-form="decide" data-id="${id}" data-v="${status}">
+    <div class="grab"></div><h2>${status === 'approved' ? '✓ મંજૂર કરો' : '✕ નામંજૂર કરો'}: ${esc(c.flatId)}</h2>
+    <p>${esc(c.description)}</p>
+    <label class="field">નોંધ / કારણ ${status === 'rejected' ? '*' : ''}<textarea name="remark" id="d-remark" rows="3">${esc(c.remark)}</textarea></label>
+    ${status === 'approved' && assets ? `<label class="field">ફાઇનલ પ્લાન (વૈકલ્પિક)<input type="file" name="photos" id="d-photos" accept="image/*,application/pdf" multiple></label>` : ''}
+    <p class="err"></p>
+    <div class="row"><button type="button" class="btn" data-act="close">રદ</button>
+      <button class="btn ${status === 'approved' ? 'btn-good' : 'btn-main'}" style="flex:1">${status === 'approved' ? 'મંજૂર કરો' : 'નામંજૂર કરો'}</button></div>
+  </form>`);
+}
+
+// ---------- More: visitors, labour, project info ----------
+const VS = { new: ['નવા', 'p-wait'], interested: ['રસ છે', 'p-good'], followup: ['ફોલો-અપ', 'p-wait'], booked: ['બુક કર્યું', 'p-good'], no: ['રસ નથી', 'p-bad'] };
+function viewMore() {
+  if (!S.more) {
+    return `<section class="card menu">
+      <button data-act="more" data-id="visitors">🚶<span>દૈનિક મુલાકાતીઓ<small>સાઇટ / ઓફિસ પર આવેલા ગ્રાહકો અને ફોલો-અપ</small></span></button>
+      <button data-act="more" data-id="labour">👷<span>મજૂર અને કોન્ટ્રાક્ટર<small>હાજરી, મજૂરી, ચુકવણી</small></span></button>
+      <button data-act="more" data-id="info">🏙️<span>પ્રોજેક્ટ માહિતી<small>પ્લાન, સુવિધાઓ, સરનામું</small></span></button>
+    </section>
+    <div class="groups"><img src="assets/logo-pramukh-builders.jpg" alt="Pramukh Builders"><i></i><img src="assets/logo-shreeji-builders.jpg" alt="Shreeji Builders"></div>`;
+  }
+  const back = `<button class="btn btn-sm back" data-act="more" data-id="">‹ પાછા</button>`;
+  if (S.more === 'visitors') {
+    const t = today();
+    const vs = list('visitors').sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    return `${back}
+      <button class="btn btn-main" data-act="visitorForm">+ નવા મુલાકાતી</button>
+      <section class="card">${vs.length ? vs.map(v => `
+        <div class="item">
+          <span><strong>${v.example ? '📌 ' : ''}${esc(v.name)}</strong> <span class="hint">${fmt(v.date)}${v.interest ? ' · ' + (v.interest === 'both' ? '3/4' : v.interest) + ' BHK' : ''}</span></span>
+          ${v.status ? `<span class="pill ${VS[v.status][1]}">${VS[v.status][0]}</span>` : '<span></span>'}
+          <span class="m">${v.phone ? esc(v.phone) + ' · ' : ''}${v.followUp ? `<span class="${v.followUp <= t && !['booked', 'no'].includes(v.status) ? 'neg' : ''}">ફોલો-અપ ${fmt(v.followUp)}</span>` : ''}${v.notes ? ' · ' + esc(v.notes) : ''}</span>
+          <span class="m row">${v.phone ? `<a class="btn btn-sm" href="${wa(v.phone)}" target="_blank" rel="noopener">💬</a>` : ''}<button class="btn btn-sm" data-act="visitorForm" data-id="${v.id}">સુધારો</button></span>
+        </div>`).join('') : '<p class="empty">હજુ કોઈ મુલાકાતી નથી.</p>'}</section>`;
+  }
+  if (S.more === 'labour') {
+    const tabs = `<div class="seg" role="group"><button class="${S.labourTab === 'workers' ? 'on' : ''}" data-act="labTab" data-id="workers">મજૂર</button>
+      <button class="${S.labourTab === 'att' ? 'on' : ''}" data-act="labTab" data-id="att">હાજરી</button>
+      <button class="${S.labourTab === 'pay' ? 'on' : ''}" data-act="labTab" data-id="pay">ચુકવણી</button></div>`;
+    if (S.labourTab === 'att') {
+      const d = S.attDay || today();
+      const marks = (S.data.attendance[d] || {}).marks || {};
+      const daily = list('workers').filter(w => w.kind !== 'contractor');
+      return `${back}${tabs}
+        <input class="inp" type="date" id="attDay" value="${d}" max="${today()}" aria-label="હાજરીની તારીખ">
+        <section class="card">${daily.length ? daily.map(w => `
+          <div class="att"><span><strong>${esc(w.name)}</strong><br><span class="hint">${esc(w.work)}</span></span>
+            <div class="seg" role="group" aria-label="${esc(w.name)}">
+              ${[['p', 'હાજર'], ['h', 'અડધો'], ['a', 'ગેરહાજર']].map(([k, l]) => `<button class="${k} ${marks[w.id] === k ? 'on' : ''}" data-act="att" data-id="${w.id}" data-v="${k}">${l}</button>`).join('')}
+            </div></div>`).join('') : '<p class="empty">પહેલા "મજૂર" માં રોજમદાર ઉમેરો.</p>'}</section>`;
+    }
+    if (S.labourTab === 'pay') {
+      const ps = list('labourPay').sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+      return `${back}${tabs}<button class="btn btn-main" data-act="payForm">+ ચુકવણી ઉમેરો</button>
+        <section class="card">${ps.length ? ps.map(p => { const w = S.data.workers[p.workerId]; return `
+          <div class="item"><span><strong>${esc(w ? w.name : '—')}</strong> <span class="hint">${fmt(p.date)}</span></span><span class="num">${money(p.amount)}</span>
+          <span class="m">${esc(p.notes)} <button class="btn btn-sm btn-bad" data-act="rmPay" data-id="${p.id}" data-confirm>કાઢો</button></span></div>`; }).join('') : '<p class="empty">હજુ કોઈ ચુકવણી નથી.</p>'}</section>`;
+    }
+    const ws = list('workers');
+    return `${back}${tabs}<button class="btn btn-main" data-act="workerForm">+ મજૂર / કોન્ટ્રાક્ટર ઉમેરો</button>
+      <section class="card">${ws.length ? ws.map(w => {
+        const earned = workerEarned(w), due = earned - workerPaid(w);
+        return `<div class="item"><span><strong>${esc(w.name)}</strong> <span class="hint">${w.kind === 'contractor' ? 'કોન્ટ્રાક્ટર' : 'રોજમદાર'} · ${esc(w.work)}</span></span>
+          <span class="num ${due > 0 ? 'neg' : 'pos'}">${money(due)}</span>
+          <span class="m">${w.kind === 'contractor' ? 'કોન્ટ્રાક્ટ ' + money(w.contract) : `${workerDays(w)} દિવસ × ${money(w.wage)}`} · ચૂકવેલ ${money(workerPaid(w))} · બાકી ઉપર
+          <button class="btn btn-sm" data-act="workerForm" data-id="${w.id}">સુધારો</button></span></div>`;
+      }).join('') : '<p class="empty">હજુ કોઈ મજૂર નથી.</p>'}</section>`;
+  }
+  return `${back}
+    <section class="card"><h2>Pramukh View</h2><p class="hint">3 & 4 BHK લક્ઝુરિયસ ફ્લેટ · G + 14 · કુલ ${FLATS.length} ફ્લેટ</p>
+      <p>${ADDRESS}</p>
+      <div class="row"><span class="num">📞 ${PHONE}</span><a class="btn btn-sm" href="https://wa.me/91${digits(PHONE)}" target="_blank" rel="noopener">💬 WhatsApp</a>
+      <a class="btn btn-sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('Parsana Chowk, Mota Mava, Rajkot')}" target="_blank" rel="noopener">📍 નકશો</a></div></section>
+    <section class="card"><h3>વિંગ A · 4 BHK · 1775 ચો.ફૂટ</h3><a href="assets/plan-4bhk.jpg" target="_blank" rel="noopener"><img class="plan-img" src="assets/plan-4bhk.jpg" alt="4 BHK પ્લાન" loading="lazy"></a></section>
+    <section class="card"><h3>વિંગ B · 3 BHK · 1350 ચો.ફૂટ</h3><a href="assets/plan-3bhk.jpg" target="_blank" rel="noopener"><img class="plan-img" src="assets/plan-3bhk.jpg" alt="3 BHK પ્લાન" loading="lazy"></a></section>
+    <section class="card"><h3>સુવિધાઓ</h3><ul class="amen">${AMENITIES.map(a => `<li>${a}</li>`).join('')}</ul></section>
+    <div class="groups"><img src="assets/logo-pramukh-builders.jpg" alt="Pramukh Builders"><i></i><img src="assets/logo-shreeji-builders.jpg" alt="Shreeji Builders"></div>`;
+}
+function visitorForm(id) {
+  const v = id ? S.data.visitors[id] : {};
+  const opt = (pairs, cur) => pairs.map(([k, l]) => `<option value="${k}" ${k === cur ? 'selected' : ''}>${l}</option>`).join('');
+  openSheet(`<form data-form="visitor" data-id="${id || ''}">
+    <div class="grab"></div><h2>${id ? 'મુલાકાતી સુધારો' : 'નવા મુલાકાતી'}</h2>
+    <label class="field">તારીખ<input type="date" name="date" id="v-date" value="${esc(v.date || today())}"></label>
+    <label class="field">નામ *<input name="name" id="v-name" required value="${esc(v.name)}" autocomplete="off"></label>
+    <label class="field">મોબાઇલ<input name="phone" id="v-phone" type="tel" inputmode="tel" value="${esc(v.phone)}"></label>
+    <label class="field">પસંદ<select name="interest" id="v-int"><option value=""></option>${opt([['3', '3 BHK'], ['4', '4 BHK'], ['both', '3 / 4 BHK બંને']], v.interest)}</select></label>
+    <label class="field">ક્યાંથી ખબર પડી<select name="source" id="v-src"><option value=""></option>${opt([['ref', 'ઓળખાણ / રેફરન્સ'], ['hoarding', 'હોર્ડિંગ / બેનર'], ['paper', 'છાપું'], ['social', 'સોશિયલ મીડિયા'], ['walkin', 'સીધા સાઇટ પર'], ['other', 'અન્ય']], v.source)}</select></label>
+    <label class="field">સ્થિતિ<select name="status" id="v-status">${opt(Object.entries(VS).map(([k, x]) => [k, x[0]]), v.status || 'new')}</select></label>
+    <label class="field">ફોલો-અપ તારીખ<input type="date" name="followUp" id="v-follow" value="${esc(v.followUp)}"></label>
+    <label class="field">નોંધ<textarea name="notes" id="v-notes" rows="2">${esc(v.notes)}</textarea></label>
+    <p class="err"></p>
+    <div class="row">${id ? `<button type="button" class="btn btn-bad" data-act="rmVisitor" data-id="${id}" data-confirm>કાઢો</button>` : `<button type="button" class="btn" data-act="close">રદ</button>`}
+      <button class="btn btn-main" style="flex:1">સેવ કરો</button></div>
+  </form>`);
+}
+function workerForm(id) {
+  const w = id ? S.data.workers[id] : { kind: 'daily' };
+  openSheet(`<form data-form="worker" data-id="${id || ''}">
+    <div class="grab"></div><h2>${id ? 'સુધારો' : 'મજૂર / કોન્ટ્રાક્ટર ઉમેરો'}</h2>
+    <label class="field">નામ *<input name="name" id="w-name" required value="${esc(w.name)}" autocomplete="off"></label>
+    <label class="field">પ્રકાર<select name="kind" id="w-kind"><option value="daily" ${w.kind !== 'contractor' ? 'selected' : ''}>રોજમદાર</option><option value="contractor" ${w.kind === 'contractor' ? 'selected' : ''}>કોન્ટ્રાક્ટર</option></select></label>
+    <label class="field">કામ (દા.ત. કડિયા, પ્લમ્બર)<input name="work" id="w-work" value="${esc(w.work)}"></label>
+    <label class="field">દૈનિક મજૂરી (રોજમદાર)<input name="wage" id="w-wage" type="number" inputmode="numeric" min="0" value="${esc(w.wage)}"></label>
+    <label class="field">કોન્ટ્રાક્ટ રકમ (કોન્ટ્રાક્ટર)<input name="contract" id="w-contract" type="number" inputmode="numeric" min="0" value="${esc(w.contract)}"></label>
+    <label class="field">મોબાઇલ<input name="phone" id="w-phone" type="tel" value="${esc(w.phone)}"></label>
+    <p class="err"></p>
+    <div class="row">${id ? `<button type="button" class="btn btn-bad" data-act="rmWorker" data-id="${id}" data-confirm>કાઢો</button>` : `<button type="button" class="btn" data-act="close">રદ</button>`}
+      <button class="btn btn-main" style="flex:1">સેવ કરો</button></div>
+  </form>`);
+}
+function payForm() {
+  const ws = list('workers');
+  if (!ws.length) { toast('પહેલા મજૂર ઉમેરો.', true); return; }
+  openSheet(`<form data-form="pay">
+    <div class="grab"></div><h2>મજૂરી ચુકવણી</h2>
+    <label class="field">કોને *<select name="workerId" id="p-worker" required>${ws.map(w => `<option value="${w.id}">${esc(w.name)} · બાકી ${money(workerEarned(w) - workerPaid(w))}</option>`).join('')}</select></label>
+    <label class="field">તારીખ<input type="date" name="date" id="p-date" value="${today()}"></label>
+    <label class="field">રકમ *<input name="amount" id="p-amount" type="number" inputmode="numeric" min="1" required></label>
+    <label class="field">નોંધ<input name="notes" id="p-notes"></label>
+    <p class="err"></p>
+    <div class="row"><button type="button" class="btn" data-act="close">રદ</button><button class="btn btn-main" style="flex:1">સેવ કરો</button></div>
+  </form>`);
+}
+
+// ---------- Sheet ----------
+function openSheet(html, flatId = null) {
+  const s = $('#sheet');
+  S.sheetFlat = flatId;
+  s.innerHTML = html;
+  if (!s.open) s.showModal();
+  s.scrollTop = 0;
+}
+const closeSheet = () => $('#sheet').open && $('#sheet').close();
+$('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet') closeSheet(); });
+
+// ---------- Form submits ----------
+document.addEventListener('submit', async e => {
+  const form = e.target.closest('[data-form]');
+  if (!form) return;
+  e.preventDefault();
+  const v = Object.fromEntries(new FormData(form).entries());
+  const err = $('.err', form);
+  const btn = $('button:not([type=button])', form);
+  const kind = form.dataset.form, id = form.dataset.id;
+  try {
+    btn.disabled = true;
+    if (kind === 'owner') {
+      if (!v.name.trim()) throw 'નામ લખો.';
+      await put('owners', id, { name: v.name.trim(), phone: v.phone.trim(), date: v.date, address: v.address.trim(), notes: v.notes.trim() });
+      toast('સેવ થયું ✓');
+      openFlat(id);
+      return;
+    }
+    if (kind === 'change') {
+      if (!v.flatId) throw 'ફ્લેટ પસંદ કરો.';
+      if (!v.description.trim()) throw 'શું ફેરફાર કરવો છે તે લખો.';
+      const files = $('#c-photos', form) ? [...$('#c-photos', form).files] : [];
+      const photos = files.length ? await uploadPhotos(files) : [];
+      await put('changes', newId(), { flatId: v.flatId, description: v.description.trim(), photos, finalPhotos: [], status: 'pending', remark: '', createdAt: today(), decidedAt: '', doneAt: '' });
+      toast('વિનંતી ઉમેરાઈ ✓');
+      S.changeFilter = 'pending';
+    }
+    if (kind === 'decide') {
+      const status = form.dataset.v, c = S.data.changes[id];
+      if (status === 'rejected' && !v.remark.trim()) throw 'નામંજૂર કરવાનું કારણ લખો.';
+      const files = $('#d-photos', form) ? [...$('#d-photos', form).files] : [];
+      const extra = files.length ? await uploadPhotos(files) : [];
+      await put('changes', id, { ...c, status, remark: v.remark.trim(), finalPhotos: [...(c.finalPhotos || []), ...extra], decidedAt: c.status === status && c.decidedAt ? c.decidedAt : today(), doneAt: '' });
+      toast(status === 'approved' ? 'મંજૂર ✓' : 'નામંજૂર');
+    }
+    if (kind === 'visitor') {
+      if (!v.name.trim()) throw 'નામ લખો.';
+      await put('visitors', id || newId(), { ...v, name: v.name.trim() });
+      toast('સેવ થયું ✓');
+    }
+    if (kind === 'worker') {
+      if (!v.name.trim()) throw 'નામ લખો.';
+      await put('workers', id || newId(), { ...v, name: v.name.trim(), wage: Number(v.wage) || 0, contract: Number(v.contract) || 0 });
+      toast('સેવ થયું ✓');
+    }
+    if (kind === 'pay') {
+      if (!(Number(v.amount) > 0)) throw 'રકમ લખો.';
+      await put('labourPay', newId(), { ...v, amount: Number(v.amount) });
+      toast('સેવ થયું ✓');
+    }
+    closeSheet();
+  } catch (ex) {
+    if (typeof ex === 'string') err.textContent = ex;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ---------- Taps ----------
+const ACTIONS = {
+  tab: el => { S.tab = el.dataset.id; if (S.tab !== 'more') S.more = null; render(); window.scrollTo(0, 0); },
+  go: el => {
+    const [tab, sub] = el.dataset.id.split(':');
+    S.tab = tab;
+    if (tab === 'changes' && sub) S.changeFilter = sub;
+    if (tab === 'more') S.more = sub || null;
+    render(); window.scrollTo(0, 0);
+  },
+  more: el => { S.more = el.dataset.id || null; render(); window.scrollTo(0, 0); },
+  close: () => closeSheet(),
+  day: el => { if (S.dirty) saveDraft(); S.day = shiftDay(S.day, Number(el.dataset.id)); render(); },
+  openDay: el => { if (S.dirty) saveDraft(); S.day = el.dataset.id; render(); window.scrollTo(0, 0); },
+  mark: async el => {
+    const prev = prevReportDay(S.day), doc = S.data.daily[prev];
+    const plan = doc.plan.map((p, i) => i === Number(el.dataset.id)
+      ? { ...p, status: p.status === el.dataset.v ? '' : el.dataset.v, checkedOn: S.day } : p);
+    await put('daily', prev, { ...doc, plan });
+  },
+  carry: async el => {
+    const p = S.data.daily[prevReportDay(S.day)].plan[Number(el.dataset.id)];
+    S.draft.plan.push({ id: newId(), text: p.text, status: '' });
+    await saveDraft(); render();
+  },
+  addPlan: async () => {
+    const inp = $('#planText'), text = inp.value.trim();
+    if (!text) { inp.focus(); return; }
+    S.draft.plan.push({ id: newId(), text, status: '' });
+    inp.value = '';
+    await saveDraft(); render(true);
+    $('#planText').focus();
+  },
+  rmPlan: async el => { S.draft.plan.splice(Number(el.dataset.id), 1); await saveDraft(); render(); },
+  rmPhoto: async el => { S.draft.photos = S.draft.photos.filter(x => x !== el.dataset.id); await saveDraft(); render(); },
+  flatMode: el => { S.flatMode = el.dataset.id; render(); },
+  flat: el => openFlat(el.dataset.id),
+  openFlat: el => openFlat(el.dataset.id),
+  ownerForm: el => ownerForm(el.dataset.id),
+  rmOwner: async el => { await remove('owners', el.dataset.id); toast('માલિક કાઢ્યા'); openFlat(el.dataset.id); },
+  changeForm: el => changeForm(el.dataset.id || ''),
+  chFilter: el => { S.changeFilter = el.dataset.id; render(); },
+  decide: el => decideForm(el.dataset.id, el.dataset.v),
+  chDone: async el => { const c = S.data.changes[el.dataset.id]; await put('changes', el.dataset.id, { ...c, status: 'done', doneAt: today() }); toast('કામ પૂરું ✓'); },
+  chUndo: async el => { const c = S.data.changes[el.dataset.id]; await put('changes', el.dataset.id, { ...c, status: 'approved', doneAt: '' }); },
+  rmChange: async el => { await remove('changes', el.dataset.id); closeSheet(); toast('કાઢી નાખ્યું'); },
+  visitorForm: el => visitorForm(el.dataset.id),
+  rmVisitor: async el => { await remove('visitors', el.dataset.id); closeSheet(); },
+  labTab: el => { S.labourTab = el.dataset.id; render(); },
+  workerForm: el => workerForm(el.dataset.id),
+  rmWorker: async el => { await remove('workers', el.dataset.id); closeSheet(); },
+  payForm: () => payForm(),
+  rmPay: async el => { await remove('labourPay', el.dataset.id); },
+  att: async el => {
+    const d = S.attDay || today();
+    const doc = S.data.attendance[d] || { date: d, marks: {} };
+    const marks = { ...doc.marks };
+    marks[el.dataset.id] = marks[el.dataset.id] === el.dataset.v ? '' : el.dataset.v;
+    await put('attendance', d, { date: d, marks });
+  },
+  clearExamples: async () => {
+    for (const c of COLLS) for (const [id, v] of Object.entries(S.data[c])) if (v && v.example) await remove(c, id);
+    S.draftDay = '';
+    toast('ઉદાહરણ કાઢી નાખ્યા ✓');
+  }
+};
+
+// Delete buttons ask once more inside the page (the viewer shows no confirm dialogs)
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  if (el.hasAttribute('data-confirm') && !el.dataset.armed) {
+    el.dataset.armed = '1';
+    el.dataset.label = el.textContent;
+    el.textContent = 'ખાતરી? ફરી દબાવો';
+    setTimeout(() => { if (el.isConnected) { delete el.dataset.armed; el.textContent = el.dataset.label; } }, 3500);
+    return;
+  }
+  e.preventDefault();
+  ACTIONS[el.dataset.act] && ACTIONS[el.dataset.act](el, e);
+});
+
+// Typing in the daily report saves when you leave the box
+document.addEventListener('input', e => {
+  if (!S.draft) return;
+  if (e.target.id === 'workDone') { S.draft.workDone = e.target.value; S.dirty = true; }
+  if (e.target.id === 'workers') { S.draft.workers = e.target.value; S.dirty = true; }
+});
+document.addEventListener('change', async e => {
+  const t = e.target;
+  if ((t.id === 'workDone' || t.id === 'workers') && S.dirty) saveDraft();
+  if (t.id === 'dayPick' && t.value) { if (S.dirty) await saveDraft(); S.day = t.value > today() ? today() : t.value; render(); }
+  if (t.id === 'attDay' && t.value) { S.attDay = t.value; render(); }
+  if (t.id === 'dayPhotos' && t.files.length) {
+    const ids = await uploadPhotos([...t.files]);
+    if (ids.length) { S.draft.photos.push(...ids); await saveDraft(); toast(`${ids.length} ફોટો ઉમેરાયા ✓`); }
+    render();
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.id === 'planText') { e.preventDefault(); ACTIONS.addPlan(); }
+});
+
+// ---------- Start ----------
+async function start() {
+  render();
+  if (!window.claude || !window.claude.use) { S.status = 'nodb'; render(); return; }
+  [db, assets] = await Promise.all([window.claude.use('db'), window.claude.use('assets')]);
+  if (!db) { S.status = 'nodb'; render(); return; }
+  S.status = 'ok';
+  COLLS.forEach(c => db.collection(c).onSnapshot(snap => {
+    const m = {};
+    snap.docs.forEach(d => { m[d.id] = d.data(); });
+    S.data[c] = m;
+    S.loaded.add(c);
+    render();
+  }, () => { S.loaded.add(c); toast('માહિતી લોડ ન થઈ. પેજ ફરી ખોલો.', true); render(); }));
+}
+setTimeout(() => { if (!db && S.status === 'loading') { S.status = 'nodb'; render(); } }, 12000);
+start();
+</script>
