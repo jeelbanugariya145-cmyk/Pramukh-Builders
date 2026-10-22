@@ -47,7 +47,6 @@ function renderDashboard(main) {
   const cards = [
     can('complaints') && stat('d_openComplaints', Store.list('complaints').filter(c => c.status === 'open' || c.status === 'working').length, '', 'complaints'),
     can('complaints') && !isContractor() && stat('d_toCheck', Store.list('complaints').filter(c => c.status === 'fixed').length, Store.list('complaints').some(c => c.status === 'fixed') ? 'warn' : '', 'complaints:fixed'),
-    seesDaily() && stat('d_todayReports', Store.list('dailyReports').filter(r => r.date === today()).length, '', 'daily'),
     Store.has('changeRequests') && stat('d_pendingChanges', pendingChanges, pendingChanges ? 'warn' : '', 'changes'),
     can('visitors') && stat('d_todayVisitors', todayVisitors, '', 'visitors:visitors'),
     can('materials') && stat('d_monthBills', money(sum(month, b => b.amount)), '', 'materials:monthly'),
@@ -65,7 +64,25 @@ function renderDashboard(main) {
   });
   const dueRows = Object.values(dues).sort((a, b) => b.amount - a.amount);
 
+  // Plan decisions of all flats: changed / regular / not chosen yet
+  const units = Store.list('units');
+  const choices = { changed: 0, regular: 0, none: 0 };
+  units.forEach(u => { choices[Calc.planChoice(u)]++; });
+  const awaiting = Store.list('changeRequests').filter(c => c.status === 'pending').length;
+  const choiceTile = (k, sub = '') => `<button class="stat pc-${k}" data-go="flats:holders:${k}">
+      <span class="stat-label">${t('pc_' + k)}</span><span class="stat-value">${choices[k]}</span>${sub ? `<span class="stat-sub">${sub}</span>` : ''}</button>`;
+  const planCard = units.length && (!onSite() || officeChanges()) ? `
+    <section class="card">
+      <h2 class="section-title"><span>${t('pc_dashTitle')} · ${t('pc_total')} ${units.length}</span></h2>
+      <div class="stats pc-stats">
+        ${choiceTile('changed', awaiting ? `${t('pc_awaiting')}: ${awaiting}` : '')}
+        ${choiceTile('regular')}
+        ${choiceTile('none', `${t('pc_noHolder')}: ${units.filter(u => !Calc.unitBooking(u)).length}`)}
+      </div>
+    </section>` : '';
+
   main.insertAdjacentHTML('beforeend', `
+    ${planCard}
     <div class="stats">${cards}</div>
 
     ${can('materials') && dueRows.length ? `
@@ -116,8 +133,9 @@ function renderDashboard(main) {
     </section>` : ''}`);
 
   main.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => {
-    const [page, tab] = b.dataset.go.split(':');
+    const [page, tab, filter] = b.dataset.go.split(':');
     state.page = page;
+    if (filter) state.filter.holders = filter;
     if (tab && page === 'complaints') state.filter.complaints = tab;
     else if (tab) state.tab[page] = tab;
     render();
@@ -138,6 +156,9 @@ function renderHolders(container) {
   const statusOf = u => { const c = Calc.unitChange(u); return c && c.status !== 'rejected' ? c.status : 'none'; };
   const counts = {};
   units.forEach(u => { const k = statusOf(u); counts[k] = (counts[k] || 0) + 1; });
+  const choiceKeys = ['all', 'changed', 'regular', 'none'];
+  const choice = choiceKeys.includes(state.filter.holders) ? state.filter.holders : 'all';
+  const choiceCount = k => k === 'all' ? units.length : units.filter(u => Calc.planChoice(u) === k).length;
 
   const wingHtml = wing => {
     const wu = units.filter(u => (u.wing || '') === wing);
@@ -157,7 +178,8 @@ function renderHolders(container) {
                 .sort((a, b) => String(a.number).localeCompare(String(b.number), 'en', { numeric: true }))
                 .map(u => {
                   const owner = Calc.unitBooking(u);
-                  return `<button class="flat flat-ch-${statusOf(u)}" data-unit="${u.id}" title="${esc(Calc.unitLabel(u.id))}">
+                  const dim = choice !== 'all' && Calc.planChoice(u) !== choice;
+                  return `<button class="flat flat-ch-${statusOf(u)} ${dim ? 'flat-dim' : ''}" data-unit="${u.id}" title="${esc(Calc.unitLabel(u.id))}">
                     <span class="flat-no">${esc(u.number)}</span>
                     <span class="flat-who">${owner ? esc(owner.customerName) : '—'}</span>
                   </button>`;
@@ -171,12 +193,15 @@ function renderHolders(container) {
     ${projects.length > 1 ? `<div class="toolbar"><label class="inline">${t('project')}
       <select id="chart-project">${projects.map(p => `<option value="${p.id}" ${p.id === pid ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label></div>` : ''}
     <p class="hint">${t('holdersHelp')}</p>
+    <div class="tabs">${choiceKeys.map(k => `<button class="tab ${k === choice ? 'active' : ''}" data-choice="${k}">
+      ${k === 'all' ? t('all') : t('pc_' + k)} <span class="count">${choiceCount(k)}</span></button>`).join('')}</div>
     <div class="toolbar legends">${['none', 'pending', 'approved', 'done'].map(k =>
       `<span class="legend"><i class="dot dot-ch-${k}"></i>${k === 'none' ? t('plan_regularShort') : t('cs_' + k)} ${counts[k] || 0}</span>`).join('')}</div>
     <div class="wings">${wings.map(wingHtml).join('')}</div>`;
 
   const sel = $('#chart-project', container);
   if (sel) sel.addEventListener('change', e => { state.chartProject = e.target.value; render(); });
+  container.querySelectorAll('[data-choice]').forEach(btn => btn.addEventListener('click', () => { state.filter.holders = btn.dataset.choice; render(); }));
   container.querySelectorAll('[data-unit]').forEach(btn => btn.addEventListener('click', () => openFlatSheet(btn.dataset.unit)));
 }
 

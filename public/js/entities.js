@@ -71,6 +71,8 @@ const ENTITIES = {
       { name: 'customerName', label: 'customerName', required: true },
       { name: 'phone', label: 'loginMobile', type: 'tel', required: true },
       { name: 'pin', label: 'loginPin', type: 'pin', help: 'pinHelp' },
+      { name: 'planChoice', label: 'pc_title', type: 'select', default: '',
+        options: () => [{ value: '', label: t('pc_none') }, { value: 'regular', label: t('pc_regular') }] },
       { name: 'address', label: 'address', type: 'textarea' },
       { name: 'bookingDate', label: 'bookingDate', type: 'date', required: true, default: today },
       { name: 'notes', label: 'notes', type: 'textarea' }

@@ -129,6 +129,7 @@ function openFlatSheet(unitId) {
         <h3>${t('holder')}</h3>
         ${owner ? `
           <div><strong>${esc(owner.customerName)}</strong></div>
+          <div class="hint">${t('pc_title')}: <strong class="pc-text-${Calc.planChoice(u)}">${t('pc_' + Calc.planChoice(u))}</strong></div>
           <div class="hint">${t('loginMobile')}: <strong>${esc(owner.phone)}</strong> · ${owner.hasLogin ? `<span class="pos">✓ ${t('loginOn')}</span>` : `<span class="neg">${t('loginOff')}</span>`}</div>
           ${editable ? `<div class="row-gap">
             <button class="btn btn-small btn-primary" data-edit-holder>${t('editHolder')}</button>
@@ -165,6 +166,25 @@ function openFlatSheet(unitId) {
 }
 
 // ---------- Flat owner: only their own flat ----------
+// The holder tells us: keep the regular plan, or change it (by sending a request below)
+function choiceBox(u, b) {
+  const choice = Calc.planChoice(u);
+  if (choice === 'changed') return '';
+  if (choice === 'regular') return `
+    <div class="pc-box pc-box-done">
+      <p><strong>✓ ${t('pc_chosenRegular')}</strong></p>
+      <button class="btn btn-small" data-choice-set="" data-booking="${b.id}">${t('pc_undo')}</button>
+    </div>`;
+  return `
+    <div class="pc-box">
+      <p><strong>${t('pc_ask')}</strong></p>
+      <div class="row-gap">
+        <button class="btn btn-primary" data-choice-set="regular" data-booking="${b.id}">✓ ${t('pc_keepRegular')}</button>
+        <button class="btn" data-choice-change="${b.id}">✏️ ${t('pc_wantChange')}</button>
+      </div>
+    </div>`;
+}
+
 function renderMyFlat(main) {
   const bookings = Store.list('bookings');
   main.innerHTML = `
@@ -197,7 +217,9 @@ function renderMyFlat(main) {
         ${planView(u, requests)}
         <p class="hint">${t('typicalPlanHelp')}</p>
 
-        <h3 class="section-title"><span>${t('requestChange')}</span></h3>
+        ${choiceBox(u, b)}
+
+        <h3 class="section-title" id="req-${b.id}"><span>${t('requestChange')}</span></h3>
         <form class="change-form" data-booking="${b.id}" novalidate>
           <label class="field"><span>${t('changeWhat')}</span>
             <textarea name="description" rows="3" placeholder="${esc(t('changePlaceholder'))}"></textarea></label>
@@ -219,6 +241,25 @@ function renderMyFlat(main) {
         <a class="btn btn-accent" href="https://wa.me/91${BRAND.phone}" target="_blank" rel="noopener">💬 WhatsApp</a>
       </div>
     </section>`);
+
+  main.querySelectorAll('[data-choice-set]').forEach(btn => btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    try {
+      const rec = await api('POST', `/bookings/${btn.dataset.booking}/plan-choice`, { choice: btn.dataset.choiceSet });
+      const i = Store.data.bookings.findIndex(x => x.id === rec.id);
+      if (i >= 0) Store.data.bookings[i] = rec;
+      toast(t('saved'));
+      render();
+    } catch (ex) {
+      toast(errText(ex), 'err');
+      btn.disabled = false;
+    }
+  }));
+  main.querySelectorAll('[data-choice-change]').forEach(btn => btn.addEventListener('click', () => {
+    const form = $(`.change-form[data-booking="${btn.dataset.choiceChange}"]`, main);
+    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    form.elements.description.focus({ preventScroll: true });
+  }));
 
   main.querySelectorAll('.change-form').forEach(form => form.addEventListener('submit', async e => {
     e.preventDefault();

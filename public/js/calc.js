@@ -53,6 +53,15 @@ const Calc = {
   },
 
   // Material bills
+  // What the holder decided: 'changed' (a change request that was not rejected),
+  // 'regular' (keeps the typical plan) or 'none' (nothing chosen yet)
+  planChoice(u) {
+    const c = this.unitChange(u);
+    if (c && c.status !== 'rejected') return 'changed';
+    const b = this.unitBooking(u);
+    return b && b.planChoice === 'regular' ? 'regular' : 'none';
+  },
+
   billPaid: b => b.status === 'paid',
   monthBills(ym) {
     return Store.list('bills').filter(b => (b.date || '').startsWith(ym));

@@ -40,7 +40,7 @@ export function can(u, perm) {
 export const FIELDS = {
   projects: ['name', 'location', 'startDate', 'status', 'price3', 'price4', 'notes'],
   units: ['projectId', 'wing', 'number', 'type', 'bhk', 'floor', 'area', 'parking', 'price'],
-  bookings: ['unitId', 'customerName', 'phone', 'address', 'bookingDate', 'notes'],
+  bookings: ['unitId', 'customerName', 'phone', 'address', 'bookingDate', 'notes', 'planChoice'],
   bills: ['projectId', 'date', 'billNo', 'supplier', 'itemsText', 'gst', 'amount', 'photo', 'status', 'paidDate', 'paidMode', 'paidRef', 'notes'],
   expenses: ['projectId', 'date', 'category', 'amount', 'notes'],
   visitors: ['date', 'name', 'phone', 'interest', 'source', 'budget', 'attendedBy', 'status', 'followUp', 'notes'],

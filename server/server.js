@@ -86,6 +86,7 @@ function prepare(coll, data, body, existing) {
     const unitId = data.unitId ?? existing?.unitId;
     if (!find('units', unitId)) fail(400, 'bad_unit');
     if (db.bookings.some(b => b.unitId === unitId && b.id !== existing?.id)) fail(400, 'unit_booked');
+    if ('planChoice' in data) data.planChoice = data.planChoice === 'regular' ? 'regular' : '';
     if (body.pin) {
       if (!validPin(body.pin)) fail(400, 'bad_pin');
       if (db.users.some(u => u.mobile === normMobile(data.phone ?? existing?.phone))) fail(400, 'mobile_is_staff');
@@ -311,6 +312,19 @@ async function api(req, res, url) {
     db.complaints = db.complaints.filter(c => c.id !== parts[1]);
     save();
     return send(res, 200, { ok: true });
+  }
+
+  // ---------- Plan choice: the holder keeps the regular plan (or undecided) ----------
+  if (method === 'POST' && parts[0] === 'bookings' && parts[2] === 'plan-choice') {
+    const booking = find('bookings', parts[1]);
+    if (!booking) fail(404, 'not_found');
+    const own = user.role === 'customer' && customerBookings(user).some(b => b.id === booking.id);
+    if (!own && !can(user, 'flats')) fail(403, 'forbidden');
+    const body = await readBody(req);
+    booking.planChoice = body.choice === 'regular' ? 'regular' : '';
+    booking.planChoiceAt = booking.planChoice ? localToday() : '';
+    save();
+    return send(res, 200, publicRecord('bookings', booking));
   }
 
   // ---------- Plan change requests ----------

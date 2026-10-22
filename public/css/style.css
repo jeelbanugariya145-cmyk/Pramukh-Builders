@@ -579,3 +579,20 @@ button.stat:not(:disabled):hover { border-color: var(--brand); }
 .new-plan { background: var(--surface-2); border-left: 4px solid #8B5CC6; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
 .new-plan .change-desc { margin: 0; }
 @media (prefers-color-scheme: dark) { .plan-changed { background: #33264A; color: #C9A8F2; } }
+
+/* Plan choice: dashboard tiles, holders filter, customer box */
+.stat-sub { display: block; font-size: 12px; color: var(--muted); margin-top: 4px; }
+.pc-stats { margin: 0; }
+.stat.pc-changed { border-left: 4px solid #8B5CC6; }
+.stat.pc-changed .stat-value { color: #8B5CC6; }
+.stat.pc-regular { border-left: 4px solid var(--good); }
+.stat.pc-regular .stat-value { color: var(--good); }
+.stat.pc-none { border-left: 4px solid var(--brand, #EE751C); }
+.stat.pc-none .stat-value { color: var(--brand, #EE751C); }
+.flat.flat-dim { opacity: .25; }
+.pc-text-changed { color: #8B5CC6; }
+.pc-text-regular { color: var(--good); }
+.pc-text-none { color: var(--bad); }
+.pc-box { border: 2px dashed var(--brand, #EE751C); border-radius: 12px; padding: 12px 14px; margin: 14px 0; }
+.pc-box p { margin: 0 0 10px; }
+.pc-box-done { border: 1px solid var(--good); border-style: solid; }
