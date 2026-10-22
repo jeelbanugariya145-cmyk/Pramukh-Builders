@@ -11,8 +11,9 @@ import { setupPramukhView, loadDemo } from './demo.js';
 
 const PORT = Number(process.env.PORT) || 3000;
 const PUBLIC_DIR = path.resolve('public');
-const MAX_BODY = 25 * 1024 * 1024;
-const MAX_FILE = 15 * 1024 * 1024;
+const MAX_BODY = 30 * 1024 * 1024;
+const MAX_FILE = 20 * 1024 * 1024;
+const CAD_TYPES = ['application/acad', 'image/vnd.dxf'];
 const STATIC_TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json', '.webmanifest': 'application/manifest+json'
@@ -100,12 +101,27 @@ const publicRecord = (coll, r) => {
   return r;
 };
 
+// Phones often send AutoCAD and PDF files without a type, so the file name's extension decides
+const BY_EXT = { pdf: 'application/pdf', dwg: 'application/acad', dxf: 'image/vnd.dxf' };
+
+// Checks the first bytes so a renamed file of another kind is refused
+function looksLike(mime, buf) {
+  if (mime === 'application/pdf') return buf.subarray(0, 5).toString('latin1') === '%PDF-';
+  if (mime === 'application/acad') return buf.subarray(0, 4).toString('latin1') === 'AC10';
+  if (mime === 'image/vnd.dxf') return /SECTION/.test(buf.subarray(0, 4000).toString('latin1'));
+  return true;
+}
+
 async function saveUpload(user, body) {
   const m = /^data:([\w/+.-]+);base64,(.*)$/s.exec(body.dataUrl || '');
-  if (!m || !FILE_TYPES[m[1]]) fail(400, 'bad_file');
+  const name = String(body.name || 'file').slice(0, 200);
+  const ext = (name.match(/\.([a-z0-9]+)$/i) || [])[1];
+  const mime = (ext && BY_EXT[ext.toLowerCase()]) || (m && m[1]);
+  if (!m || !FILE_TYPES[mime]) fail(400, 'bad_file');
   const buf = Buffer.from(m[2], 'base64');
   if (buf.length > MAX_FILE) fail(413, 'too_large');
-  const file = { id: newId(), name: String(body.name || 'file').slice(0, 200), mime: m[1], size: buf.length, by: user.id, at: new Date().toISOString() };
+  if (!looksLike(mime, buf)) fail(400, 'bad_file');
+  const file = { id: newId(), name, mime, size: buf.length, by: user.id, at: new Date().toISOString() };
   await writeFile(file, buf);
   db.files.push(file);
   save();
@@ -304,11 +320,18 @@ async function api(req, res, url) {
     if (!booking) fail(400, 'bad_booking');
     const own = user.role === 'customer' && customerBookings(user).some(b => b.id === booking.id);
     if (!own && !can(user, 'flats')) fail(403, 'forbidden');
-    const files = (body.files || []).filter(id => db.files.some(f => f.id === id && f.by === user.id));
-    if (!String(body.description || '').trim() && !files.length) fail(400, 'empty_request');
+    const mine = id => db.files.find(f => f.id === id && f.by === user.id);
+    const files = (body.files || []).filter(mine);
+    // The changed plan as a PDF and as an AutoCAD drawing; both are required from flat owners
+    const pdf = mine(body.pdfFile);
+    const cad = mine(body.cadFile);
+    const pdfFile = pdf && pdf.mime === 'application/pdf' ? pdf.id : '';
+    const cadFile = cad && CAD_TYPES.includes(cad.mime) ? cad.id : '';
+    if (user.role === 'customer' && (!pdfFile || !cadFile)) fail(400, 'plan_files_required');
+    if (!String(body.description || '').trim()) fail(400, 'empty_request');
     const rec = {
       id: newId(), bookingId: booking.id, unitId: booking.unitId, customerName: booking.customerName, phone: booking.phone,
-      description: String(body.description || '').slice(0, 3000), files, finalFiles: [],
+      description: String(body.description || '').slice(0, 3000), files, pdfFile, cadFile, finalFiles: [],
       status: 'pending', remark: '', createdAt: localToday(), reviewedAt: '', reviewedBy: '', doneAt: ''
     };
     db.changeRequests.push(rec);
@@ -361,7 +384,8 @@ async function api(req, res, url) {
     if (!bytes) fail(404, 'not_found');
     res.writeHead(200, {
       'Content-Type': f.mime,
-      'Content-Disposition': `inline; filename="${encodeURIComponent(f.name)}"`,
+      // Drawings download; photos and PDFs open in the browser
+      'Content-Disposition': `${CAD_TYPES.includes(f.mime) ? 'attachment' : 'inline'}; filename*=UTF-8''${encodeURIComponent(f.name)}`,
       'Cache-Control': 'private, max-age=86400',
       'X-Content-Type-Options': 'nosniff'
     });

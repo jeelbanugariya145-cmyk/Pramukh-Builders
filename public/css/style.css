@@ -564,3 +564,4 @@ button.stat:not(:disabled):hover { border-color: var(--brand); }
 .site-change.done p:first-child { color: var(--muted); }
 .p-none { background: var(--surface-2); color: var(--muted); }
 @media (max-width: 860px) { .site-list { grid-template-columns: 1fr; } }
+.plan-files { display: flex; gap: 8px; flex-wrap: wrap; }

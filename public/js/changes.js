@@ -4,10 +4,55 @@ const PLAN_IMAGE = { 3: 'assets/plan-3bhk.jpg', 4: 'assets/plan-4bhk.jpg' };
 
 const changeBadge = c => `<span class="badge badge-ch-${c.status}">${t('cs_' + c.status)}</span>`;
 
+// The changed plan as PDF and AutoCAD drawing (required from flat owners), plus optional photos
+function planFileFields(required) {
+  const star = required ? ' <b class="req">*</b>' : '';
+  return `
+    <label class="field"><span>📄 ${t('planPdf')}${star}</span>
+      <input type="file" name="pdf" accept=".pdf,application/pdf"></label>
+    <label class="field"><span>📐 ${t('planCad')}${star}</span>
+      <input type="file" name="cad" accept=".dwg,.dxf">
+      <small class="hint">${t('planCadHelp')}</small></label>
+    <label class="field"><span>${t('changePhotoOptional')}</span>
+      <input type="file" name="photos" accept="image/*" multiple></label>`;
+}
+
+// Checks the chosen files and uploads them; throws a message to show if something is missing
+async function uploadPlanFiles(form, required) {
+  const pdf = form.elements.pdf.files[0];
+  const cad = form.elements.cad.files[0];
+  if (pdf && !/\.pdf$/i.test(pdf.name)) throw new Error('need_pdf');
+  if (cad && !/\.(dwg|dxf)$/i.test(cad.name)) throw new Error('need_cad');
+  if (required && !pdf) throw new Error('need_pdf');
+  if (required && !cad) throw new Error('need_cad');
+  const out = { pdfFile: '', cadFile: '', files: [] };
+  const list = [pdf && ['pdfFile', pdf], cad && ['cadFile', cad], ...[...form.elements.photos.files].map(f => ['files', f])].filter(Boolean);
+  let i = 0;
+  for (const [key, f] of list) {
+    busy(true, `${t('uploading')} ${++i}/${list.length}`);
+    try {
+      const id = (await uploadFile(f)).id;
+      if (key === 'files') out.files.push(id); else out[key] = id;
+    } finally {
+      busy(false);
+    }
+  }
+  return out;
+}
+
+// Links to the PDF and AutoCAD drawing of a request
+function planFileLinks(c) {
+  if (!c.pdfFile && !c.cadFile) return '';
+  return `<div class="plan-files">
+    ${c.pdfFile ? `<a class="btn btn-small btn-accent" href="${fileUrl(c.pdfFile)}" target="_blank" rel="noopener">📄 ${t('planPdfOpen')}</a>` : ''}
+    ${c.cadFile ? `<a class="btn btn-small btn-accent" href="${fileUrl(c.cadFile)}" download>📐 ${t('planCadDownload')}</a>` : ''}
+  </div>`;
+}
+
 function thumbs(ids, label) {
   if (!ids || !ids.length) return '';
   return `<div class="thumbs">${label ? `<div class="hint">${label}</div>` : ''}${ids.map(id =>
-    `<a href="${fileUrl(id)}" target="_blank" rel="noopener" class="thumb"><img src="${fileUrl(id)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'📄 PDF'}))"></a>`).join('')}</div>`;
+    `<a href="${fileUrl(id)}" target="_blank" rel="noopener" class="thumb"><img src="${fileUrl(id)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'📎'}))"></a>`).join('')}</div>`;
 }
 
 function changeCard(c, { actions = '', showCustomer = true } = {}) {
@@ -23,6 +68,7 @@ function changeCard(c, { actions = '', showCustomer = true } = {}) {
         ${changeBadge(c)}
       </header>
       <p class="change-desc">${esc(c.description)}</p>
+      ${planFileLinks(c)}
       ${(c.status === 'approved' || c.status === 'done') && c.finalFiles && c.finalFiles.length ? thumbs(c.finalFiles, t('finalPlan')) : ''}
       ${thumbs(c.files, t('customerPlan'))}
       <div class="change-meta hint">
@@ -74,8 +120,7 @@ function renderMyFlat(main) {
         <form class="change-form" data-booking="${b.id}" novalidate>
           <label class="field"><span>${t('changeWhat')}</span>
             <textarea name="description" rows="3" placeholder="${esc(t('changePlaceholder'))}"></textarea></label>
-          <label class="field"><span>${t('changePhoto')}</span>
-            <input type="file" name="photos" accept="image/*,application/pdf" multiple></label>
+          ${planFileFields(true)}
           <p class="error" role="alert"></p>
           <button class="btn btn-primary" type="submit">${t('sendRequest')}</button>
         </form>
@@ -98,15 +143,13 @@ function renderMyFlat(main) {
     e.preventDefault();
     const err = $('.error', form);
     const description = form.elements.description.value.trim();
-    const files = [...form.elements.photos.files];
-    if (!description && !files.length) { err.textContent = t('err_empty_request'); return; }
+    if (!description) { err.textContent = t('err_empty_request'); return; }
     const btn = $('button[type=submit]', form);
     btn.disabled = true;
     btn.textContent = t('sending');
     try {
-      const uploaded = [];
-      for (const f of files) uploaded.push((await uploadFile(f)).id);
-      const rec = await api('POST', '/changes', { bookingId: form.dataset.booking, description, files: uploaded });
+      const files = await uploadPlanFiles(form, true);
+      const rec = await api('POST', '/changes', { bookingId: form.dataset.booking, description, ...files });
       Store.data.changeRequests.push(rec);
       toast(t('requestSent'));
       render();
@@ -187,7 +230,7 @@ function openReview(c) {
       ${changeCard(c)}
       <label class="field"><span>${t('remark')}</span><textarea name="remark" rows="3">${esc(c.remark)}</textarea></label>
       <label class="field"><span>${t('finalPlanUpload')}</span>
-        <input type="file" name="final" accept="image/*,application/pdf" multiple>
+        <input type="file" name="final" accept="image/*,.pdf,.dwg,.dxf" multiple>
         <small class="hint">${t('finalPlanHelp')}</small></label>
       <p class="error" role="alert"></p>
       <div class="modal-actions">
@@ -229,7 +272,7 @@ function openOfficeRequest() {
         ${bookings.map(b => `<option value="${b.id}">${esc(Calc.unitLabel(b.unitId))} — ${esc(b.customerName)}</option>`).join('')}
       </select></label>
       <label class="field"><span>${t('changeWhat')}</span><textarea name="description" rows="3"></textarea></label>
-      <label class="field"><span>${t('changePhoto')}</span><input type="file" name="photos" accept="image/*,application/pdf" multiple></label>
+      ${planFileFields(false)}
       <p class="error" role="alert"></p>
       <div class="modal-actions">
         <button type="button" class="btn" data-cancel>${t('cancel')}</button>
@@ -241,12 +284,10 @@ function openOfficeRequest() {
   form.addEventListener('submit', async e => {
     e.preventDefault();
     const description = form.elements.description.value.trim();
-    const files = [...form.elements.photos.files];
-    if (!description && !files.length) { $('.error', form).textContent = t('err_empty_request'); return; }
+    if (!description) { $('.error', form).textContent = t('err_empty_request'); return; }
     try {
-      const uploaded = [];
-      for (const f of files) uploaded.push((await uploadFile(f)).id);
-      replaceChange(await api('POST', '/changes', { bookingId: form.elements.bookingId.value, description, files: uploaded }));
+      const files = await uploadPlanFiles(form, false);
+      replaceChange(await api('POST', '/changes', { bookingId: form.elements.bookingId.value, description, ...files }));
       dlg.close();
       render();
     } catch (err) {
@@ -313,6 +354,7 @@ function renderSiteList(main) {
             <div class="site-change ${c.status}">
               <p>${esc(c.description)}</p>
               ${c.remark ? `<p class="hint"><strong>${t('remark')}:</strong> ${esc(c.remark)}</p>` : ''}
+              ${planFileLinks(c)}
               ${thumbs(c.finalFiles, (c.finalFiles || []).length ? t('finalPlan') : '')}
               ${thumbs(c.files, (c.files || []).length ? t('customerPlan') : '')}
               <div class="between">

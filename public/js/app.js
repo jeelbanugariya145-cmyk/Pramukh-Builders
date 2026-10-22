@@ -462,5 +462,14 @@ document.addEventListener('DOMContentLoaded', () => {
   $('#lang-toggle').addEventListener('click', () => setLang(LANG === 'gu' ? 'en' : 'gu'));
   $('#logout').addEventListener('click', logoutNow);
   $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') e.target.close(); });
+
+  // Coming back to the app (phone unlocked, tab switched) fetches the latest data,
+  // unless a form is open so nothing being typed is lost
+  let lastLoad = Date.now();
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState !== 'visible' || !Store.me || $('#modal').open || Date.now() - lastLoad < 30000) return;
+    lastLoad = Date.now();
+    try { await Store.load(); render(); } catch (e) { /* offline: keep what is shown */ }
+  });
   boot();
 });

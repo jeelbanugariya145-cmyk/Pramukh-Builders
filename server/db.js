@@ -23,7 +23,8 @@ function empty() {
 
 const EXT = {
   'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif',
-  'application/pdf': '.pdf', 'text/csv': '.csv', 'text/plain': '.txt'
+  'application/pdf': '.pdf', 'text/csv': '.csv', 'text/plain': '.txt',
+  'application/acad': '.dwg', 'image/vnd.dxf': '.dxf'
 };
 export const FILE_TYPES = EXT;
 

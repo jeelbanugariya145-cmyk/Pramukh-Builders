@@ -101,9 +101,9 @@ function readAsDataUrl(file) {
 
 // Uploads a photo or PDF and returns the server's file record
 async function uploadFile(file) {
-  const dataUrl = file.type.startsWith('image/') && file.type !== 'image/gif'
-    ? await shrinkImage(file)
-    : await readAsDataUrl(file);
+  // Only real photos are shrunk; drawings (browsers call .dwg "image/vnd.dwg") go as they are
+  const photo = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'].includes(file.type) && !/\.(dwg|dxf)$/i.test(file.name);
+  const dataUrl = photo ? await shrinkImage(file) : await readAsDataUrl(file);
   return api('POST', '/upload', { name: file.name, dataUrl });
 }
 

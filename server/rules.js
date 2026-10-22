@@ -125,7 +125,7 @@ export function canReadFile(u, fileId) {
   if (file.by === u.id) return true;
   const data = readableData(u);
   const inChanges = (data.changeRequests || []).some(c =>
-    (c.files || []).includes(fileId) || (c.finalFiles || []).includes(fileId));
+    (c.files || []).includes(fileId) || (c.finalFiles || []).includes(fileId) || c.pdfFile === fileId || c.cadFile === fileId);
   const inBills = (data.bills || []).some(b => b.photo === fileId);
   const inReports = (data.dailyReports || []).some(r => (r.photos || []).includes(fileId));
   const inComplaints = (data.complaints || []).some(c =>
