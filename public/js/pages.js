@@ -180,6 +180,87 @@ function renderHolders(container) {
   container.querySelectorAll('[data-unit]').forEach(btn => btn.addEventListener('click', () => openFlatSheet(btn.dataset.unit)));
 }
 
+// ---------- Project info (from brochure) ----------
+function renderInfo(main) {
+  const total = BRAND.wings.reduce((n, w) => n + w.floors * w.perFloor, 0);
+  const rooms = bhk => `
+    <table class="table rooms">
+      <tbody>${BRAND.rooms[bhk].map(r => `<tr><td>${pick(r[0], r[1])}</td><td class="num">${r[2]}</td></tr>`).join('')}</tbody>
+    </table>`;
+
+  main.innerHTML = `
+    ${heroBanner()}
+    <div class="stats">
+      <div class="stat"><div class="stat-label">${t('i_flats')}</div><div class="stat-value">${total}</div></div>
+      <div class="stat"><div class="stat-label">${t('i_years')}</div><div class="stat-value">${BRAND.years}</div></div>
+      <div class="stat"><div class="stat-label">${t('i_customers')}</div><div class="stat-value">${BRAND.customers}</div></div>
+      <div class="stat"><div class="stat-label">${t('floor')}</div><div class="stat-value">G + 14</div></div>
+    </div>
+
+    <section class="card contact-card">
+      <div>
+        <div class="hint">${t('i_site')}</div>
+        <p class="address">${pick(BRAND.address, BRAND.addressGu)}</p>
+      </div>
+      <div class="row-gap">
+        <a class="btn btn-primary" href="tel:+91${BRAND.phone}">📞 ${t('i_call')} ${BRAND.phoneDisplay}</a>
+        <a class="btn btn-accent" href="https://wa.me/91${BRAND.phone}" target="_blank" rel="noopener">💬 WhatsApp</a>
+        <a class="btn" href="${BRAND.mapUrl}" target="_blank" rel="noopener">📍 ${t('i_map')}</a>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title"><span>${t('i_plans')}</span></h2>
+      <div class="plans">
+        <figure><img src="assets/plan-4bhk.jpg" alt="4 BHK plan" loading="lazy"><figcaption>${t('i_wingA')}</figcaption>${rooms(4)}</figure>
+        <figure><img src="assets/plan-3bhk.jpg" alt="3 BHK plan" loading="lazy"><figcaption>${t('i_wingB')}</figcaption>${rooms(3)}</figure>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title"><span>${t('i_amenities')}</span></h2>
+      <div class="amenities">
+        ${BRAND.amenities.map(a => `<div class="amenity"><span class="amenity-icon">${a[0]}</span><span>${pick(a[1], a[2])}</span></div>`).join('')}
+      </div>
+      <div class="gallery">
+        <img src="assets/club.jpg" alt="" loading="lazy">
+        <img src="assets/day-view.jpg" alt="" loading="lazy">
+        <img src="assets/aerial.jpg" alt="" loading="lazy">
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title"><span>${t('i_specs')}</span></h2>
+      <div class="specs">
+        ${BRAND.specs.map(sp => `<div class="spec"><strong>${pick(sp[0], sp[1])}</strong><span>${pick(sp[2], sp[3])}</span></div>`).join('')}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title"><span>${t('i_location')}</span></h2>
+      <div class="location">
+        <img src="assets/location-map.jpg" alt="Location map">
+        <div>
+          <h3>${t('i_nearby')}</h3>
+          <ul class="chips">${BRAND.landmarks.map(l => `<li>${esc(l)}</li>`).join('')}</ul>
+          <a class="btn" href="${BRAND.mapUrl}" target="_blank" rel="noopener">📍 ${t('i_map')}</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="card about">
+      <h2 class="section-title"><span>${t('i_about')}</span></h2>
+      <div class="group-logos">
+        <img src="assets/logo-pramukh-builders.jpg" alt="Pramukh Builders">
+        <span class="divider"></span>
+        <img src="assets/logo-shreeji-builders.jpg" alt="Shreeji Builders">
+      </div>
+      <p>${t('i_aboutText')}</p>
+      <h3>${t('i_past')}</h3>
+      <ul class="chips">${BRAND.pastProjects.map(l => `<li>${esc(l)}</li>`).join('')}</ul>
+    </section>`;
+}
+
 // ---------- Settings ----------
 async function adminAction(url, doneMsg, confirmMsg) {
   if (confirmMsg && !confirm(confirmMsg)) return;

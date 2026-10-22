@@ -39,6 +39,7 @@ function pagesFor() {
       { id: 'sitelist', icon: '🏗️' },
       can('complaints') && { id: 'complaints', icon: '📢' },
       seesDaily() && { id: 'daily', icon: '📋' },
+      { id: 'info', icon: '🏙️' },
       { id: 'settings', icon: '⚙️' }
     ].filter(Boolean);
   }
@@ -53,6 +54,7 @@ function pagesFor() {
     can('materials') && { id: 'materials', icon: '🧱', tabs: ['bills', 'monthly', 'bank', 'expenses'] },
     can('visitors') && { id: 'visitors', icon: '🚶', tabs: ['visitors'] },
     isPartner() && { id: 'users', icon: '👥', tabs: ['users'] },
+    { id: 'info', icon: '🏙️' },
     { id: 'settings', icon: '⚙️' }
   ].filter(Boolean);
   pages.forEach(p => { if (p.tabs) p.tabs = p.tabs.filter(Boolean); });
@@ -175,6 +177,7 @@ function render() {
 
   if (page.id === 'myflat') return renderMyFlat(main);
   if (page.id === 'dashboard') return renderDashboard(main);
+  if (page.id === 'info') return renderInfo(main);
   if (page.id === 'changes') return renderChanges(main);
   if (page.id === 'daily') return renderDaily(main);
   if (page.id === 'complaints') return renderComplaints(main);
