@@ -123,7 +123,7 @@ function openFlatSheet(unitId) {
   dlg.innerHTML = `
     <div class="modal-card flat-sheet">
       <div class="between"><h2>${t('flat')} ${esc(Calc.unitCode(u))}</h2><button class="btn btn-small" data-close>${t('close')}</button></div>
-      <p class="hint">${u.bhk ? esc(u.bhk) + ' BHK · ' : ''}${t('floor')} ${esc(u.floor)}${u.area ? ` · ${esc(u.area)} sq ft` : ''}</p>
+      <p class="hint">${u.bhk ? esc(u.bhk) + ' BHK · ' : ''}${t('floor')} ${esc(u.floor)}${u.area ? ` · ${esc(u.area)} sq ft ${t('q_carpet')}` : ''}</p>
 
       <section class="holder-box">
         <h3>${t('holder')}</h3>
